@@ -2,15 +2,18 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef RENDERER_RASTERIZATION_HPP
-#define RENDERER_RASTERIZATION_HPP
+#ifndef DEPTH_SEARCH_RASTERIZATION_HPP
+#define DEPTH_SEARCH_RASTERIZATION_HPP
 
+#include "opencv2/highgui.hpp"
 #include "Eigen/Dense"
 #include "convert.hpp"
 #include "iodata.hpp"
 #include "Triangle.hpp"
-#include "Shader.hpp"
-#include "Mesh.hpp"
+#include <fstream>
+#include <ctime>
+#include <sys/time.h>
+#include <algorithm>
 
 #define EPSILON 1e-9
 #define GAMMA 1/2.2
@@ -26,10 +29,14 @@ class Rasterization
 public:
     int x; // resolution
     int y; // resolution
-    double *z_buffer; // value in [0, 1], z = (point.d - min_depth)/(max_depth - min_depth)
-    double *image_buffer;
+//    std::vector<Pixel> pixels;
+//    std::vector<double> z_buffer;
+    double* z_buffer;
+    double* image_buffer;
     Camera *camera;
-    Mesh mesh;
+    std::vector<Eigen::Vector3d> mesh;
+    std::vector<Triangle *> triangles;
+    Eigen::Vector3d illuminant;
     cv::Mat image;
     uint16_t lut[65535]; // look up table
 
@@ -37,8 +44,9 @@ public:
      *
      * @param dem_file
      * @param camera_file
+     * @param illuminant_file
      */
-    void read_data(std::string &dem_file, std::string &camera_file);
+    void read_data(std::string &dem_file, std::string &camera_file, std::string &illuminant_file);
 
     /**
      *
@@ -48,21 +56,17 @@ public:
     /**
      *
      */
-    void rasterize(Shader *shader);
+    void rasterize();
 
     /**
-     * Write result depth image. The gray level manifests the depth, 0(black) means farthest and 255(white) means nearest.
-     */
-    void write_depth_image();
-
-    /**
-     *
-     */
-    void write_result_image();
+         * Write result depth image. The gray level manifests the depth, 0(black) means farthest and 255(white) means nearest.
+         */
+    void write_result_depth_image();
 
 private:
-    const double min_depth = 10.0; // clip min depth
-    const double max_depth = 1000.0; // clip max depth
+    const double max_depth = 10000;
+
+    void set_pixel();
 
     /**
      * Adjust the order of vertex in every triangle.
@@ -93,14 +97,9 @@ private:
      * @param p_1
      * @param p_2
      * @param p
-     * @param u
-     * @param v
-     * @param w
      * @return true if in triangle
      */
-    bool is_in_triangle(
-            Eigen::Vector2d p_0, Eigen::Vector2d p_1, Eigen::Vector2d p_2, Eigen::Vector2d p, double &u, double &v,
-            double &w);
+    bool is_in_triangle(Eigen::Vector2d p_0, Eigen::Vector2d p_1, Eigen::Vector2d p_2, Eigen::Vector2d p);
 
     /**
      * Calculate the depth from optical center to point that is crossed by given point to plane.
@@ -112,22 +111,18 @@ private:
 
     /**
      * Interpolate the depth of point in triangle.
-     * @param d_0
-     * @param d_1
-     * @param d_2
-     * @param u
-     * @param v
-     * @param w
+     * @param triangle
+     * @param p
      * @return depth from optical center to point that is crossed by given point to plane
      */
-    static double interpolate_depth(double d_0, double d_1, double d_2, double u, double v, double w);
+    double interpolate_depth(Triangle triangle, Eigen::Vector2d p);
 
     /**
-     * Calculate camera coordinate of given pixel coordinate.
+     * Calculate world coordinate of given pixel coordinate.
      * @param pixel pixel coordinate in pixel system
      * @param world world coordinate of the pixel in world system
      */
-    void pixel_to_view(Eigen::Vector2d pixel, Eigen::Vector3d &view) const;
+    void pixel_to_world(Eigen::Vector2d pixel, Eigen::Vector3d &world) const;
 
     /**
      * Get the cross point in plane.
@@ -136,6 +131,11 @@ private:
      * @param cross cross point in the plane A_0 A_1 A_2
      */
     void get_cross_point(Triangle triangle, Eigen::Vector3d P, Eigen::Vector3d &cross) const;
+
+    /**
+     *
+     */
+    void write_result_image();
 };
 
-#endif
+#endif //DEPTH_SEARCH_RASTERIZATION_HPP
