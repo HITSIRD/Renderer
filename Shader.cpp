@@ -36,13 +36,43 @@ void Shader::calibrate()
     view = camera->R_inv * view;
 };
 
-void Shader::shader(Vector3d normal, double *point)
+void Shader::flat_shading(Vector3d normal, double *point)
 {
-    double lum = normal.dot(light) / (normal.norm() * light.norm());
+    double lum = normal.dot(-light) / (normal.norm() * light.norm());
+    //    double lum = abs(normal.dot(light) / (normal.norm() * light.norm()));
     double diffuse = max(lum, 0.0);
 
     // Angle between reflected light and viewing
-    Vector3d bisector = (light + view);
+    Vector3d bisector = (-light) + view;
+    //    double specular = pow(max(normal.dot(bisector) / (normal.norm() * bisector.norm()), 0.0), spec_rank);
+    double specular = pow(max(abs(normal.dot(bisector) / (normal.norm() * bisector.norm())), 0.0), spec_rank);
+    *point = ka + kd * diffuse + ks * specular;
+};
+
+void Shader::phong_shading(
+        Vector3d &normal_0, Vector3d &normal_1, Vector3d &normal_2, double u, double v, double w, double *point)
+{
+    // normal vector interpolation
+    Vector3d normal = w * normal_0 + v * normal_1 + u * normal_2;
+    double lum = normal.dot(-light) / (normal.norm() * light.norm());
+    double diffuse = max(lum, 0.0);
+    //    double diffuse = max(abs(lum), 0.0);
+
+    // Angle between reflected light and viewing
+    Vector3d bisector = (-light) + view;
+    double specular = pow(max(normal.dot(bisector) / (normal.norm() * bisector.norm()), 0.0), spec_rank);
+    //    double specular = pow(max(abs(normal.dot(bisector) / (normal.norm() * bisector.norm())), 0.0), spec_rank);
+    *point = ka + kd * diffuse + ks * specular;
+};
+
+void Shader::phong_shading(Vector3d &normal, double *point)
+{
+    // normal vector interpolation
+    double lum = normal.dot(-light) / (normal.norm() * light.norm());
+    double diffuse = max(lum, 0.0);
+
+    // Angle between reflected light and viewing
+    Vector3d bisector = (-light) + view;
     double specular = pow(max(normal.dot(bisector) / (normal.norm() * bisector.norm()), 0.0), spec_rank);
     *point = ka + kd * diffuse + ks * specular;
 };

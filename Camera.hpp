@@ -2,8 +2,8 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef DEPTH_SEARCH_CAMERA_HPP
-#define DEPTH_SEARCH_CAMERA_HPP
+#ifndef RENDERER_CAMERA_HPP
+#define RENDERER_CAMERA_HPP
 
 #include "opencv2/highgui.hpp"
 #include "Eigen/Dense"
@@ -72,13 +72,13 @@ public:
     void calculate();
 
 private:
-//    /**
-//    * Calculate rotation matrix of H, P, B.
-//    * @param H
-//    * @param P
-//    * @param B
-//    */
-//    void calculate_HPB(cv::Mat &H, cv::Mat &P, cv::Mat &B);
+    //    /**
+    //    * Calculate rotation matrix of H, P, B.
+    //    * @param H
+    //    * @param P
+    //    * @param B
+    //    */
+    //    void calculate_HPB(cv::Mat &H, cv::Mat &P, cv::Mat &B);
 
     /**
     * Calculate rotation matrix of H, P, B.
@@ -112,4 +112,4 @@ private:
 
 };
 
-#endif //DEPTH_SEARCH_CAMERA_HPP
+#endif

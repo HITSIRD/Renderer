@@ -2,12 +2,13 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef DEPTH_SEARCH_IODATA_HPP
-#define DEPTH_SEARCH_IODATA_HPP
+#ifndef RENDERER_IODATA_HPP
+#define RENDERER_IODATA_HPP
 
-#include "Eigen/Dense"
 #include <iostream>
 #include <fstream>
+#include "Eigen/Dense"
+#include "Mesh.hpp"
 
 namespace iodata
 {
@@ -27,9 +28,9 @@ namespace iodata
 
         /**
          * Convert DEM data to mesh format.
-         * @return Mesh matrix like [[x_1, y_1, z_1], [x_2, y_2, z_2], ..., [x_n, y_n, z_n]]
+         * @return mesh
          */
-        std::vector<Eigen::Vector3d> dem2mesh();
+        Mesh dem2mesh();
 
         /**
          * Read DEM data, the vertex number must be over or equal 2x2.
@@ -38,5 +39,6 @@ namespace iodata
         void read_DEM(std::string &file_name);
     };
 
-#endif //DEPTH_SEARCH_IODATA_HPP
 }
+
+#endif

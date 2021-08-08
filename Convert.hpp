@@ -2,10 +2,8 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef DEPTH_SEARCH_CONVERT_HPP
-#define DEPTH_SEARCH_CONVERT_HPP
-
-#endif //DEPTH_SEARCH_CONVERT_HPP
+#ifndef RENDERER_CONVERT_HPP
+#define RENDERER_CONVERT_HPP
 
 #include <iostream>
 #include <fstream>
@@ -31,3 +29,5 @@ public:
 
     Camera *calibrate(std::string &file_name);
 };
+
+#endif

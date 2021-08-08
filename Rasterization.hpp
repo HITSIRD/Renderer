@@ -2,18 +2,15 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef DEPTH_SEARCH_RASTERIZATION_HPP
-#define DEPTH_SEARCH_RASTERIZATION_HPP
+#ifndef RENDERER_RASTERIZATION_HPP
+#define RENDERER_RASTERIZATION_HPP
 
-#include "opencv2/highgui.hpp"
 #include "Eigen/Dense"
 #include "convert.hpp"
 #include "iodata.hpp"
 #include "Triangle.hpp"
-#include <fstream>
-#include <ctime>
-#include <sys/time.h>
-#include <algorithm>
+#include "Shader.hpp"
+#include "Mesh.hpp"
 
 #define EPSILON 1e-9
 #define GAMMA 1/2.2
@@ -27,46 +24,46 @@ typedef struct pixel
 class Rasterization
 {
 public:
-    int x; // resolution
-    int y; // resolution
-//    std::vector<Pixel> pixels;
-//    std::vector<double> z_buffer;
-    double* z_buffer;
-    double* image_buffer;
     Camera *camera;
-    std::vector<Eigen::Vector3d> mesh;
-    std::vector<Triangle *> triangles;
-    Eigen::Vector3d illuminant;
-    cv::Mat image;
-    uint16_t lut[65535]; // look up table
+    Mesh mesh;
 
     /**
      *
      * @param dem_file
      * @param camera_file
-     * @param illuminant_file
      */
-    void read_data(std::string &dem_file, std::string &camera_file, std::string &illuminant_file);
+    void read_data(std::string &dem_file, std::string &camera_file);
 
     /**
      *
      */
-    void initialize();
+    void initialize(int shader_);
 
     /**
      *
      */
-    void rasterize();
+    void rasterize(Shader *shader);
 
     /**
-         * Write result depth image. The gray level manifests the depth, 0(black) means farthest and 255(white) means nearest.
-         */
-    void write_result_depth_image();
+     * Write result depth image. The gray level manifests the depth, 0(black) means farthest and 255(white) means nearest.
+     */
+    void write_depth_image();
 
+    /**
+     *
+     */
+    void write_result_image();
 private:
-    const double max_depth = 10000;
+    int x; // resolution
+    int y; // resolution
+    double *z_buffer; // value in [0, 1], z = (point.d - min_depth)/(max_depth - min_depth)
+    double *image_buffer;
+    cv::Mat image;
+    uint16_t lut[65536]; // look up table
+    int shading_type;
 
-    void set_pixel();
+    const double min_depth = 10.0; // clip min depth
+    const double max_depth = 1000.0; // clip max depth
 
     /**
      * Adjust the order of vertex in every triangle.
@@ -97,9 +94,14 @@ private:
      * @param p_1
      * @param p_2
      * @param p
+     * @param u
+     * @param v
+     * @param w
      * @return true if in triangle
      */
-    bool is_in_triangle(Eigen::Vector2d p_0, Eigen::Vector2d p_1, Eigen::Vector2d p_2, Eigen::Vector2d p);
+    bool is_in_triangle(
+            Eigen::Vector2d p_0, Eigen::Vector2d p_1, Eigen::Vector2d p_2, Eigen::Vector2d p, double &u, double &v,
+            double &w);
 
     /**
      * Calculate the depth from optical center to point that is crossed by given point to plane.
@@ -111,18 +113,22 @@ private:
 
     /**
      * Interpolate the depth of point in triangle.
-     * @param triangle
-     * @param p
+     * @param d_0
+     * @param d_1
+     * @param d_2
+     * @param u
+     * @param v
+     * @param w
      * @return depth from optical center to point that is crossed by given point to plane
      */
-    double interpolate_depth(Triangle triangle, Eigen::Vector2d p);
+    static double interpolate_depth(double d_0, double d_1, double d_2, double u, double v, double w);
 
     /**
-     * Calculate world coordinate of given pixel coordinate.
+     * Calculate camera coordinate of given pixel coordinate.
      * @param pixel pixel coordinate in pixel system
      * @param world world coordinate of the pixel in world system
      */
-    void pixel_to_world(Eigen::Vector2d pixel, Eigen::Vector3d &world) const;
+    void pixel_to_view(Eigen::Vector2d pixel, Eigen::Vector3d &view) const;
 
     /**
      * Get the cross point in plane.
@@ -131,11 +137,6 @@ private:
      * @param cross cross point in the plane A_0 A_1 A_2
      */
     void get_cross_point(Triangle triangle, Eigen::Vector3d P, Eigen::Vector3d &cross) const;
-
-    /**
-     *
-     */
-    void write_result_image();
 };
 
-#endif //DEPTH_SEARCH_RASTERIZATION_HPP
+#endif

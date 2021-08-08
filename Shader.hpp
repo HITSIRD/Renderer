@@ -8,8 +8,12 @@
 #include "Eigen/Dense"
 #include "Camera.hpp"
 
+#define FLAT_SHADING 1
+#define PHONG_SHADING 2
+
 class Shader
 {
+public:
     double ka; // ambient coefficient
     double kd; // diffuse coefficient
     double ks; // specular coefficient
@@ -43,7 +47,28 @@ public:
      * @param normal
      * @param point
      */
-    void shader(Eigen::Vector3d normal, double *point);
+    void flat_shading(Eigen::Vector3d normal, double *point);
+
+    /**
+     *
+     * @param normal_0
+     * @param normal_1
+     * @param normal_2
+     * @param u
+     * @param v
+     * @param w
+     * @param point
+     */
+    void phong_shading(
+            Eigen::Vector3d &normal_0, Eigen::Vector3d &normal_1, Eigen::Vector3d &normal_2, double u, double v,
+            double w, double *point);
+
+    /**
+     *
+     * @param normal
+     * @param point
+     */
+    void phong_shading(Eigen::Vector3d &normal, double *point);
 };
 
 #endif
