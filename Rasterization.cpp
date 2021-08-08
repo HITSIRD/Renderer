@@ -2,15 +2,12 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#include "opencv2/highgui.hpp"
 #include "Rasterization.hpp"
-#include <fstream>
-#include <algorithm>
 
 using namespace std;
 using namespace Eigen;
 
-void Rasterization::read_data(string &dem_file, string &camera_file)
+void Rasterization::read_data(string &dem_file, string &camera_file, string &illuminant_file)
 {
     cout << "read data... " << endl;
     Convert *con = new Convert();
@@ -18,8 +15,14 @@ void Rasterization::read_data(string &dem_file, string &camera_file)
     iodata::data *d = new iodata::data();
     d->read_DEM(dem_file);
     mesh = d->dem2mesh();
-    delete con;
-    delete d;
+
+    ifstream in;
+    in.open(illuminant_file.c_str());
+    double norm_x, norm_y, norm_z;
+    in >> norm_x >> norm_y >> norm_z;
+    cout << "illuminant normal: " << norm_x << " " << norm_y << " " << norm_z << endl;
+    illuminant << norm_x, norm_y, norm_z;
+    in.close();
 };
 
 void Rasterization::initialize()
@@ -29,65 +32,55 @@ void Rasterization::initialize()
     y = camera->pixel_y;
     z_buffer = new double[x * y];
     image_buffer = new double[x * y];
+//    illuminant = camera->R_inv * (illuminant - camera->t);
 
     for (int i = 0; i < y; i++)
     {
         for (int j = 0; j < x; j++)
         {
+            //            Pixel p;
+            //            p.d = max_depth;
+            //            p.l = 0.0;
             z_buffer[i * x + j] = max_depth;
         }
     }
 
-    //        if (v_2.y() > v_1.y())
-    //        {
-    //            swap(v_2, v_1);
-    //        }
-    //        if (v_1.y() > v_0.y())
-    //        {
-    //            swap(v_1, v_0);
-    //        }
-    //        if (v_2.y() > v_1.y())
-    //        {
-    //            swap(v_2, v_1);
-    //        }
-
-    //    sort_vertex();
-
-    // calculate the lut
-    for (int i = 0; i < 65535; i++)
+    auto tri_number = mesh.size() / 3;
+    for (int i = 0; i < tri_number; i++)
     {
-        lut[i] = (uint16_t)(pow(double(i) / 65535.0, GAMMA) * 65535.0); // 16 bit gray
+        //        v_0.x = mesh[3 * i].x();
+        //        v_0.y = mesh[3 * i].y();
+        //        v_0.z = mesh[3 * i].z();
+        //        v_1.x = mesh[3 * i + 1].x();
+        //        v_1.y = mesh[3 * i + 1].y();
+        //        v_1.z = mesh[3 * i + 1].z();
+        //        v_2.x = mesh[3 * i + 2].x();
+        //        v_2.y = mesh[3 * i + 2].y();
+        //        v_2.z = mesh[3 * i + 2].z();
+        Vector3d v_0(mesh[3 * i].x(), mesh[3 * i].y(), mesh[3 * i].z());
+        Vector3d v_1(mesh[3 * i + 1].x(), mesh[3 * i + 1].y(), mesh[3 * i + 1].z());
+        Vector3d v_2(mesh[3 * i + 2].x(), mesh[3 * i + 2].y(), mesh[3 * i + 2].z());
+        Triangle *triangle = new Triangle(v_0, v_1, v_2);
+        triangles.push_back(triangle);
     }
+    //    sort_vertex();
 };
 
-void Rasterization::rasterize(Shader *shader)
+void Rasterization::rasterize()
 {
     cout << "rasterize... " << endl;
     int real_bounding_x_min, real_bounding_y_min, real_bounding_x_max, real_bounding_y_max;
     Vector2d P_0, P_1, P_2;
     Vector2i T_0, T_1;
-    double d_0, d_1, d_2; // depth of vertex in triangle
-    double u, v, w; // triangle core coordinate
-    double *depth = new double[mesh.num_vertex];
     int count = 0;
 
-    // Calculate depth of every vertex
-    for (int i = 0; i < mesh.num_vertex; i++)
+    for (auto triangle:triangles)
     {
-        depth[i] = (camera->R * mesh.vertices[i] + camera->t).z();
-    }
-
-    for (auto triangle:mesh.triangles)
-    {
-        back_projection(mesh.vertices[triangle.vertex_0], P_0);
-        back_projection(mesh.vertices[triangle.vertex_1], P_1);
-        back_projection(mesh.vertices[triangle.vertex_2], P_2);
+        back_projection(triangle->vertex_0, P_0);
+        back_projection(triangle->vertex_1, P_1);
+        back_projection(triangle->vertex_2, P_2);
 
         get_bounding_box(P_0, P_1, P_2, T_0, T_1);
-
-        d_0 = depth[triangle.vertex_0];
-        d_1 = depth[triangle.vertex_1];
-        d_2 = depth[triangle.vertex_2];
 
         // real bounding box cut
         if (T_0.x() < 0)
@@ -139,17 +132,16 @@ void Rasterization::rasterize(Shader *shader)
             for (int j = real_bounding_x_min; j <= real_bounding_x_max; j++)
             {
                 Vector2d pixel_center(double(j) + 0.5, double(i) + 0.5);
-                //                count++;
-                if (is_in_triangle(P_0, P_1, P_2, pixel_center, u, v, w))
+                if (is_in_triangle(P_0, P_1, P_2, pixel_center))
                 {
+                    double current_depth = get_depth(*triangle, pixel_center);
+                    //                    cout << current_depth;
                     count++;
-                    //                    double current_depth = get_depth(*triangle, pixel_center);
-
-                    double current_depth = interpolate_depth(d_0, d_1, d_2, u, v, w);
                     if (current_depth < z_buffer[i * x + j])
                     {
                         z_buffer[i * x + j] = current_depth;
-                        shader->shader(triangle.normal, image_buffer + i * x + j);
+                        image_buffer[i * x + j] =
+                                abs(triangle->normal.dot(illuminant) / (triangle->normal.norm() * illuminant.norm()));
                     }
                 }
             }
@@ -160,26 +152,26 @@ void Rasterization::rasterize(Shader *shader)
 
 void Rasterization::sort_vertex()
 {
-    //    for (auto triangle:triangles)
-    //    {
-    //        //        Vertex A_0 = triangle->vertex_0;
-    //        //        Vertex A_1 = triangle->vertex_1;
-    //        //        Vertex A_2 = triangle->vertex_2;
-    //        //        Vector3f A_01(A_1.x - A_0.x, A_1.y - A_0.y, A_1.z - A_0.z);
-    //        //        Vector3f A_02(A_2.x - A_0.x, A_2.y - A_0.y, A_2.z - A_0.z);
-    //
-    //        Vector3f A_01(
-    //                triangle->vertex_1.x() - triangle->vertex_0.x(), triangle->vertex_1.y() - triangle->vertex_0.y(),
-    //                triangle->vertex_1.z() - triangle->vertex_0.z());
-    //        Vector3f A_02(
-    //                triangle->vertex_2.x() - triangle->vertex_0.x(), triangle->vertex_2.y() - triangle->vertex_0.y(),
-    //                triangle->vertex_2.z() - triangle->vertex_0.z());
-    //
-    //        if (A_01.cross(A_02).lpNorm<1>() < 0)
-    //        {
-    //            swap(triangle->vertex_1, triangle->vertex_2);
-    //        }
-    //    }
+    for (auto triangle:triangles)
+    {
+        //        Vertex A_0 = triangle->vertex_0;
+        //        Vertex A_1 = triangle->vertex_1;
+        //        Vertex A_2 = triangle->vertex_2;
+        //        Vector3f A_01(A_1.x - A_0.x, A_1.y - A_0.y, A_1.z - A_0.z);
+        //        Vector3f A_02(A_2.x - A_0.x, A_2.y - A_0.y, A_2.z - A_0.z);
+
+        Vector3f A_01(
+                triangle->vertex_1.x() - triangle->vertex_0.x(), triangle->vertex_1.y() - triangle->vertex_0.y(),
+                triangle->vertex_1.z() - triangle->vertex_0.z());
+        Vector3f A_02(
+                triangle->vertex_2.x() - triangle->vertex_0.x(), triangle->vertex_2.y() - triangle->vertex_0.y(),
+                triangle->vertex_2.z() - triangle->vertex_0.z());
+
+        if (A_01.cross(A_02).lpNorm<1>() < 0)
+        {
+            swap(triangle->vertex_1, triangle->vertex_2);
+        }
+    }
 };
 
 void Rasterization::back_projection(Vector3d point, Vector2d &pixel)
@@ -239,8 +231,7 @@ void Rasterization::get_bounding_box(
     t_1.y() = (int)max_y + 1;
 };
 
-bool
-Rasterization::is_in_triangle(Vector2d P_0, Vector2d P_1, Vector2d P_2, Vector2d P, double &u, double &v, double &w)
+bool Rasterization::is_in_triangle(Vector2d P_0, Vector2d P_1, Vector2d P_2, Vector2d P)
 {
     Vector2d v0 = P_2 - P_0;
     Vector2d v1 = P_1 - P_0;
@@ -254,20 +245,19 @@ Rasterization::is_in_triangle(Vector2d P_0, Vector2d P_1, Vector2d P_2, Vector2d
 
     double deno = 1 / (dot_00 * dot_11 - dot_01 * dot_01);
 
-    u = (dot_11 * dot_02 - dot_01 * dot_12) * deno;
+    double u = (dot_11 * dot_02 - dot_01 * dot_12) * deno;
     if (u < 0 || u > 1)
     {
         return false;
     }
 
-    v = (dot_00 * dot_12 - dot_01 * dot_02) * deno;
+    double v = (dot_00 * dot_12 - dot_01 * dot_02) * deno;
     if (v < 0 || v > 1)
     {
         return false;
     }
 
-    w = 1 - u - v;
-    return w >= 0;
+    return u + v <= 1;
 
     //    Vector2d v01 = P_1 - P_0;
     //    Vector2d v12 = P_2 - P_1;
@@ -322,87 +312,83 @@ Rasterization::is_in_triangle(Vector2d P_0, Vector2d P_1, Vector2d P_2, Vector2d
 double Rasterization::get_depth(Triangle triangle, Vector2d p)
 {
     Vector3d P, cross; // world coordinate of pixel p and cross point
-    pixel_to_view(p, P);
+    pixel_to_world(p, P);
     get_cross_point(triangle, P, cross);
-    return cross.z();
+    return (camera->center - cross).lpNorm<2>();
+    //    return (camera->R * cross + camera->t).z();
 };
 
-double Rasterization::interpolate_depth(double d_0, double d_1, double d_2, double u, double v, double w)
-{
-    return 1.0 / (u / d_0 + v / d_1 + w / d_2);
-};
-
-void Rasterization::pixel_to_view(Vector2d pixel, Vector3d &view) const
+void Rasterization::pixel_to_world(Vector2d pixel, Vector3d &world) const
 {
     Vector3d p(pixel.x(), pixel.y(), 1);
-    view = camera->K_inv * p * (-camera->f / 1000.0);
+    world = camera->R_inv * (camera->K_inv * p * (-camera->f / 1000.0) - camera->t);
 };
 
 void Rasterization::get_cross_point(Triangle triangle, Vector3d P, Vector3d &cross) const
 {
-    Vector3d pc = -P;
+    Vector3d pc = camera->center - P;
     Vector3d plane(triangle.A, triangle.B, triangle.C);
     double n = (P.dot(plane) + triangle.D) / pc.dot(plane);
     cross = -(P + n * pc);
 };
 
-void Rasterization::write_depth_image()
-{
-    cout << "rendering..." << endl;
-    string file = "data/depth_image.png";
-
-    // Gamma correction
-    double max_l = 0.0, min_l = max_depth;
-    for (int i = 0; i < x * y; i++)
-    {
-        if (z_buffer[i] > max_l && (z_buffer[i] < max_depth - 1))
-        {
-            max_l = z_buffer[i];
-        }
-        if (z_buffer[i] < min_l)
-        {
-            min_l = z_buffer[i];
-        }
-    }
-
-    max_l = min(max_l, max_depth);
-    min_l = max(min_l, min_depth);
-    double dynamic = max_l - min_l;
-
-    for (int i = 0; i < x * y; i++)
-    {
-        if (fabs(z_buffer[i] - max_depth) < 0.1) // make background be black
-        {
-            z_buffer[i] = 1.0;
-            continue;
-        }
-        if (z_buffer[i] < 0.0)
-        {
-            z_buffer[i] = 0.0;
-            continue;
-        }
-        z_buffer[i] = (z_buffer[i] - min_l) / dynamic; // normalization
-    }
-
-    image = cv::Mat::zeros(x, y, CV_16U);
-    auto *p = (uint16_t *)image.data;
-    for (int i = 0; i < x * y; i++)
-    {
-        *p = 65536 - lut[(uint16_t)(z_buffer[i] * 65536)];
-        p++;
-    }
-};
-
-void Rasterization::write_result_image()
+void Rasterization::write_result_depth_image()
 {
     cout << "rendering..." << endl;
     string file = "data/image.png";
+
+    //    // Gamma correction
+    //    double max_l = 0.0, min_l = max_depth, min_depth = 0.0;
+    //    for (int i = 0; i < x * y; i++)
+    //    {
+    //        if (z_buffer[i] > max_l && (z_buffer[i] < max_depth - 1))
+    //        {
+    //            max_l = z_buffer[i];
+    //        }
+    //        if (z_buffer[i] < min_l)
+    //        {
+    //            min_l = z_buffer[i];
+    //        }
+    //    }
+    //
+    //    max_l = min(max_l, max_depth);
+    //    min_l = max(min_l, min_depth);
+    //    double dynamic = max_l - min_l;
+    //
+    //    for (int i = 0; i < x * y; i++)
+    //    {
+    //        if (fabs(z_buffer[i] - max_depth) < 0.1) // make background be black
+    //        {
+    //            z_buffer[i] = 1.0;
+    //            continue;
+    //        }
+    //        if (z_buffer[i] < 0.0)
+    //        {
+    //            z_buffer[i] = 0.0;
+    //            continue;
+    //        }
+    //        z_buffer[i] = (z_buffer[i] - min_l) / dynamic; // normalization
+    //    }
+    //
+    //    for (int i = 0; i < 65535; i++)
+    //    {
+    //        lut[i] = (uint16_t)(pow(double(i) / 65535.0, GAMMA) * 65535.0); // 16 bit gray
+    //    }
+    //
+    //    image = cv::Mat::zeros(y, x, CV_16U);
+    //    auto *p = (uint16_t *)image.data;
+    //    for (int i = 0; i < x * y; i++)
+    //    {
+    //        *p = 65536 - lut[(uint16_t)(z_buffer[i] * 65536)];
+    //        p++;
+    //    }
+    //    cv::imwrite(file, image);
 
     image = cv::Mat::zeros(y, x, CV_16U);
     auto *p = (uint16_t *)image.data;
     for (int i = 0; i < x * y; i++)
     {
-        *p = lut[(uint16_t)(image_buffer[i] * 65535)];
+        *p = (uint16_t)(image_buffer[i] * 65535);
         p++;
     }
     cv::imwrite(file, image);
