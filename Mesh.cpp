@@ -4,12 +4,12 @@
 
 #include "Mesh.hpp"
 
-void Mesh::add_vertex(Eigen::Vector3d &vertex){
+void Mesh::add_vertex(Eigen::Vector3f &vertex){
     vertices.push_back(vertex);
     num_vertex++;
-};
+}
 
 void Mesh::add_triangle(Triangle &triangle){
     triangles.push_back(triangle);
-    num_triangles++;
+    num_triangle++;
 }

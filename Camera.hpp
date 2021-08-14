@@ -2,11 +2,12 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef DEPTH_SEARCH_CAMERA_HPP
-#define DEPTH_SEARCH_CAMERA_HPP
+#ifndef RENDERER_CAMERA_HPP
+#define RENDERER_CAMERA_HPP
 
 #include "opencv2/highgui.hpp"
-#include "Eigen/Dense"
+#include "Eigen/Core"
+#include "Eigen/Geometry"
 
 class Camera
 {
@@ -14,35 +15,35 @@ public:
     // camera inner parameters
     int pixel_x; // pixel number in x
     int pixel_y; // pixel number in y
-    double ccd_size_x; // (mm)
-    double ccd_size_y; // (mm)
-    double f; // (mm)
+    float ccd_size_x; // (mm)
+    float ccd_size_y; // (mm)
+    float f; // (mm)
 
     // c4d world coordinate parameters
-    double x;
-    double y;
-    double z;
-    double h;
-    double p;
-    double b;
+    float x;
+    float y;
+    float z;
+    float h;
+    float p;
+    float b;
 
     //    cv::Mat K = cv::Mat::zeros(3, 3, CV_64F);
     //    cv::Mat R = cv::Mat::zeros(3, 3, CV_64F);
     //    cv::Mat t = cv::Mat::zeros(3, 1, CV_64F);
     //    cv::Mat d = cv::Mat::zeros(4, 1, CV_64F);
 
-    Eigen::Matrix3d K;
-    Eigen::Matrix3d R;
-    Eigen::Vector3d t;
-    Eigen::Vector4d d;
+    Eigen::Matrix3f K;
+    Eigen::Matrix3f R;
+    Eigen::Vector3f t;
+    Eigen::Vector4f d;
 
     //    cv::Mat K_inv;
     //    cv::Mat R_inv;
 
-    Eigen::Matrix3d K_inv;
-    Eigen::Matrix3d R_inv;
+    Eigen::Matrix3f K_inv;
+    Eigen::Matrix3f R_inv;
 
-    Eigen::Vector3d center;
+    Eigen::Vector3f center;
 
     /**
      * constructor
@@ -58,8 +59,8 @@ public:
      * @param b
      */
     void read_param(
-            int pixel_x, int pixel_y, double ccd_size_x, double ccd_size_y, double f, double x, double y, double z,
-            double h, double p, double b);
+            int pixel_x, int pixel_y, float ccd_size_x, float ccd_size_y, float f, float x, float y, float z,
+            float h, float p, float b);
 
     /**
      * destructor
@@ -72,13 +73,13 @@ public:
     void calculate();
 
 private:
-//    /**
-//    * Calculate rotation matrix of H, P, B.
-//    * @param H
-//    * @param P
-//    * @param B
-//    */
-//    void calculate_HPB(cv::Mat &H, cv::Mat &P, cv::Mat &B);
+    //    /**
+    //    * Calculate rotation matrix of H, P, B.
+    //    * @param H
+    //    * @param P
+    //    * @param B
+    //    */
+    //    void calculate_HPB(cv::Mat &H, cv::Mat &P, cv::Mat &B);
 
     /**
     * Calculate rotation matrix of H, P, B.
@@ -86,7 +87,7 @@ private:
     * @param P
     * @param B
     */
-    void calculate_HPB(Eigen::Matrix3d &H, Eigen::Matrix3d &P, Eigen::Matrix3d &B);
+    void calculate_HPB(Eigen::Matrix3f &H, Eigen::Matrix3f &P, Eigen::Matrix3f &B);
 
     /**
      * Calculate inner matrix K.
@@ -108,8 +109,8 @@ private:
      * @param deg
      * @return rad
      */
-    double deg2rad(double deg);
+    static float deg2rad(float deg);
 
 };
 
-#endif //DEPTH_SEARCH_CAMERA_HPP
+#endif

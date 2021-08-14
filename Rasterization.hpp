@@ -2,83 +2,78 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef DEPTH_SEARCH_RASTERIZATION_HPP
-#define DEPTH_SEARCH_RASTERIZATION_HPP
+#ifndef RENDERER_RASTERIZATION_HPP
+#define RENDERER_RASTERIZATION_HPP
 
-#include "opencv2/highgui.hpp"
-#include "Eigen/Dense"
-#include "convert.hpp"
+#include "Eigen/Core"
+#include "Convert.hpp"
 #include "iodata.hpp"
 #include "Triangle.hpp"
-#include <fstream>
-#include <ctime>
-#include <sys/time.h>
-#include <algorithm>
+#include "Shader.hpp"
+#include "Mesh.hpp"
 
-#define EPSILON 1e-9
 #define GAMMA 1/2.2
 
 typedef struct pixel
 {
-    double d; //depth
-    double l;
+    float d; //depth
+    float l;
 } Pixel;
 
 class Rasterization
 {
 public:
-    int x; // resolution
-    int y; // resolution
-//    std::vector<Pixel> pixels;
-//    std::vector<double> z_buffer;
-    double* z_buffer;
-    double* image_buffer;
-    Camera *camera;
-    std::vector<Eigen::Vector3d> mesh;
-    std::vector<Triangle *> triangles;
-    Eigen::Vector3d illuminant;
-    cv::Mat image;
-    uint16_t lut[65535]; // look up table
+    /**
+     * Constructor
+     * @param pixel_x
+     * @param pixel_y
+     * @param D_x
+     * @param D_y
+     * @param c // camera
+     * @param s // shading type
+     * @return
+     */
+    Rasterization(uint16_t pixel_x, uint16_t pixel_y, uint16_t D_x, uint16_t D_y, Camera *c, float max_depth, int s)
+    {
+        x = pixel_x;
+        y = pixel_y;
+        DEM_x = D_x;
+        DEM_y = D_y;
+        z_buffer = new float[pixel_x * pixel_y];
+        camera = c;
+        shading_type = s;
+        for (int i = 0; i < y; i++)
+        {
+            for (int j = 0; j < x; j++)
+            {
+                z_buffer[i * x + j] = max_depth;
+            }
+        }
+    }
 
     /**
      *
-     * @param dem_file
-     * @param camera_file
-     * @param illuminant_file
+     * @param mesh
+     * @param shader
+     * @param image_buffer
      */
-    void read_data(std::string &dem_file, std::string &camera_file, std::string &illuminant_file);
-
-    /**
-     *
-     */
-    void initialize();
-
-    /**
-     *
-     */
-    void rasterize();
-
-    /**
-         * Write result depth image. The gray level manifests the depth, 0(black) means farthest and 255(white) means nearest.
-         */
-    void write_result_depth_image();
+    void rasterize(Mesh *mesh, Shader *shader, float *image_buffer);
 
 private:
-    const double max_depth = 10000;
-
-    void set_pixel();
+    uint16_t x; // output image resolution
+    uint16_t y; // output image resolution
+    uint16_t DEM_x; // DEM resolution
+    uint16_t DEM_y; // DEM resolution
+    float *z_buffer; // value in [0, 1], z = (point.d - min_depth)/(max_depth - min_depth)
+    Camera *camera;
+    int shading_type;
 
     /**
-     * Adjust the order of vertex in every triangle.
+     * Calculate the pixel coordinate of 3f point by perspective projection.
+     * @param point 3f point
+     * @param pixel coordinate of back projection
      */
-    void sort_vertex();
-
-    /**
-     * Calculate the pixel coordinate of 3d point.
-     * @param point 3d point
-     * @param pixel coordinate of back projection.
-     */
-    void back_projection(Eigen::Vector3d point, Eigen::Vector2d &pixel);
+    void pers_projection(Eigen::Vector3f point, Eigen::Vector2f &pixel);
 
     /**
      * Get bounding box coordinate t_0(min(p)) and t_1(max(p))
@@ -88,18 +83,23 @@ private:
      * @param t_0
      * @param t_1
      */
-    void get_bounding_box(
-            Eigen::Vector2d p_0, Eigen::Vector2d p_1, Eigen::Vector2d p_2, Eigen::Vector2i &t_0, Eigen::Vector2i &t_1);
+    static void get_bounding_box(
+            Eigen::Vector2f p_0, Eigen::Vector2f p_1, Eigen::Vector2f p_2, Eigen::Vector2i &t_0, Eigen::Vector2i &t_1);
 
     /**
-     * Detect if a 2d point is in a given triangle.
+     * Detect if a 2f point is in a given triangle.
      * @param p_0
      * @param p_1
      * @param p_2
      * @param p
+     * @param u
+     * @param v
+     * @param w
      * @return true if in triangle
      */
-    bool is_in_triangle(Eigen::Vector2d p_0, Eigen::Vector2d p_1, Eigen::Vector2d p_2, Eigen::Vector2d p);
+    static bool is_in_triangle(
+            Eigen::Vector2f p_0, Eigen::Vector2f p_1, Eigen::Vector2f p_2, Eigen::Vector2f p, float &u, float &v,
+            float &w);
 
     /**
      * Calculate the depth from optical center to point that is crossed by given point to plane.
@@ -107,22 +107,26 @@ private:
      * @param p given pixel center
      * @return depth from optical center to point that is crossed by given point to plane
      */
-    double get_depth(Triangle triangle, Eigen::Vector2d p);
+    //    float get_depth(Triangle triangle, Eigen::Vector2f p);
 
     /**
      * Interpolate the depth of point in triangle.
-     * @param triangle
-     * @param p
+     * @param d_0
+     * @param d_1
+     * @param d_2
+     * @param u
+     * @param v
+     * @param w
      * @return depth from optical center to point that is crossed by given point to plane
      */
-    double interpolate_depth(Triangle triangle, Eigen::Vector2d p);
+    static float interpolate_depth(float d_0, float d_1, float d_2, float u, float v, float w);
 
     /**
-     * Calculate world coordinate of given pixel coordinate.
+     * Calculate camera coordinate of given pixel coordinate.
      * @param pixel pixel coordinate in pixel system
      * @param world world coordinate of the pixel in world system
      */
-    void pixel_to_world(Eigen::Vector2d pixel, Eigen::Vector3d &world) const;
+    //    void pixel_to_view(Eigen::Vector2f pixel, Eigen::Vector3f &view) const;
 
     /**
      * Get the cross point in plane.
@@ -130,12 +134,7 @@ private:
      * @param p world coordinate in world system
      * @param cross cross point in the plane A_0 A_1 A_2
      */
-    void get_cross_point(Triangle triangle, Eigen::Vector3d P, Eigen::Vector3d &cross) const;
-
-    /**
-     *
-     */
-    void write_result_image();
+    //    void get_cross_point(Triangle triangle, Eigen::Vector3f P, Eigen::Vector3f &cross) const;
 };
 
-#endif //DEPTH_SEARCH_RASTERIZATION_HPP
+#endif

@@ -2,12 +2,13 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#ifndef DEPTH_SEARCH_IODATA_HPP
-#define DEPTH_SEARCH_IODATA_HPP
+#ifndef RENDERER_IODATA_HPP
+#define RENDERER_IODATA_HPP
 
-#include "Eigen/Dense"
 #include <iostream>
 #include <fstream>
+#include "Eigen/Core"
+#include "Mesh.hpp"
 
 namespace iodata
 {
@@ -17,26 +18,28 @@ namespace iodata
         /*
          * Original DEM data.
          */
-        double *DEM;
+        float *DEM;
 
-        int x;
-        int y;
-        double sample; // distance between two sample point
-        double offset_x; // make model at center
-        double offset_y; // make model at center
+        uint16_t x; // DEM resolution
+        uint16_t y; // DEM resolution
+        float sample; // distance between two sample point
 
         /**
          * Convert DEM data to mesh format.
-         * @return Mesh matrix like [[x_1, y_1, z_1], [x_2, y_2, z_2], ..., [x_n, y_n, z_n]]
+         * @return mesh
          */
-        std::vector<Eigen::Vector3d> dem2mesh();
+        Mesh *dem2mesh();
 
         /**
          * Read DEM data, the vertex number must be over or equal 2x2.
          * @param file_name DEM file name
          */
         void read_DEM(std::string &file_name);
-    };
 
-#endif //DEPTH_SEARCH_IODATA_HPP
+    private:
+        float offset_x; // make model at center
+        float offset_y; // make model at center
+    };
 }
+
+#endif
