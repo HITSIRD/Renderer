@@ -5,15 +5,9 @@
 #ifndef RENDERER_CONVERT_HPP
 #define RENDERER_CONVERT_HPP
 
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <sstream>
-#include "camera.hpp"
+#include "Camera.hpp"
 
-#define precision 7
-
-using cv::Mat;
+#define PRECISION 7
 
 class Convert
 {
@@ -26,8 +20,16 @@ public:
      */
     void read_file(std::string &file_name);
 
-    void render();
+    /**
+     *
+     */
+    void write_result();
 
+    /**
+     *
+     * @param file_name
+     * @return
+     */
     Camera *calibrate(std::string &file_name);
 };
 

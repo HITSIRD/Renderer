@@ -2,21 +2,21 @@
 // Created by 闻永言 on 2021/7/10.
 //
 
-#include <vector>
 #include "iodata.hpp"
+#include <iostream>
+#include <fstream>
 
 using namespace std;
-using namespace Eigen;
 
-Mesh *iodata::data::dem2mesh()
+void iodata::dem2mesh(Mesh &mesh)
 {
-    Mesh *mesh = new Mesh();
     for (int i = 0; i < y; i++)
     {
         for (int j = 0; j < x; j++)
         {
-            Vector3f p(float(i) * sample - offset_x, float(j) * sample - offset_y, DEM[i * x + j]);
-            mesh->add_vertex(p);
+            Vec3 c(float(i) * sample - offset_x, float(j) * sample - offset_y, DEM[i * x + j], 1);
+            Vertex v(c);
+            mesh.add_vertex(v);
         }
     }
 
@@ -24,17 +24,15 @@ Mesh *iodata::data::dem2mesh()
     {
         for (int j = 0; j < x - 1; j++)
         {
-            Triangle triangle_0(mesh->vertices, i * x + j, i * x + x + j, i * x + j + 1);
-            Triangle triangle_1(mesh->vertices, i * x + j + 1, i * x + x + j, i * x + x + j + 1);
-            mesh->add_triangle(triangle_0);
-            mesh->add_triangle(triangle_1);
+            Triangle triangle_0(mesh.vertices, i * x + j, i * x + x + j, i * x + j + 1);
+            Triangle triangle_1(mesh.vertices, i * x + j + 1, i * x + x + j, i * x + x + j + 1);
+            mesh.add_triangle(triangle_0);
+            mesh.add_triangle(triangle_1);
         }
     }
-
-    return mesh;
 }
 
-void iodata::data::read_DEM(string &file_name)
+void iodata::read_DEM(string &file_name)
 {
     ifstream in;
 

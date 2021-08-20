@@ -3,6 +3,10 @@
 //
 
 #include "Convert.hpp"
+#include <iostream>
+#include <iomanip>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
@@ -27,7 +31,7 @@ void Convert::read_file(string &file_name)
     in.close();
 }
 
-void Convert::render()
+void Convert::write_result()
 {
     ofstream out;
     out.open("data/cali.txt");
@@ -38,27 +42,27 @@ void Convert::render()
     {
         for (int j = 0; j < 3; j++)
         {
-            out << setprecision(precision) << c->K(i, j) << " ";
-            cout << setprecision(precision) << c->K(i, j) << " ";
+            out << setprecision(PRECISION) << c->K(i, j) << " ";
+            cout << setprecision(PRECISION) << c->K(i, j) << " ";
         }
     }
     for (int i = 0; i < 3; i++)
     {
         for (int j = 0; j < 3; j++)
         {
-            out << setprecision(precision) << c->R(i, j) << " ";
-            cout << setprecision(precision) << c->R(i, j) << " ";
+            out << setprecision(PRECISION) << c->R3(i, j) << " ";
+            cout << setprecision(PRECISION) << c->R3(i, j) << " ";
         }
     }
     for (int i = 0; i < 3; i++)
     {
-        out << setprecision(precision) << c->t(i) << " ";
-        cout << setprecision(precision) << c->t(i) << " ";
+        out << setprecision(PRECISION) << c->t3(i) << " ";
+        cout << setprecision(PRECISION) << c->t3(i) << " ";
     }
     for (int i = 0; i < 4; i++)
     {
-        out << setprecision(precision) << c->d(i) << " ";
-        cout << setprecision(precision) << c->d(i) << " ";
+        out << setprecision(PRECISION) << c->d(i) << " ";
+        cout << setprecision(PRECISION) << c->d(i) << " ";
     }
     cout << endl;
 
@@ -68,8 +72,8 @@ void Convert::render()
 Camera *Convert::calibrate(string &file_name)
 {
     read_file(file_name);
-    c->calculate();
-    render();
+    c->convert();
+    write_result();
 
     return c;
 }

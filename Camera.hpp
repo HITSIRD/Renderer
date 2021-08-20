@@ -5,8 +5,7 @@
 #ifndef RENDERER_CAMERA_HPP
 #define RENDERER_CAMERA_HPP
 
-#include "opencv2/highgui.hpp"
-#include "Eigen/Core"
+#include "Type.hpp"
 #include "Eigen/Geometry"
 
 class Camera
@@ -27,23 +26,22 @@ public:
     float p;
     float b;
 
-    //    cv::Mat K = cv::Mat::zeros(3, 3, CV_64F);
-    //    cv::Mat R = cv::Mat::zeros(3, 3, CV_64F);
-    //    cv::Mat t = cv::Mat::zeros(3, 1, CV_64F);
-    //    cv::Mat d = cv::Mat::zeros(4, 1, CV_64F);
+    Mat3 K;
+    Mat3 R3;
+    Eigen::Vector3f t3;
+    Vec3 d;
 
-    Eigen::Matrix3f K;
-    Eigen::Matrix3f R;
-    Eigen::Vector3f t;
-    Eigen::Vector4f d;
+//    Eigen::Matrix3f K_inv;
+//    Eigen::Matrix3f R_inv;
 
-    //    cv::Mat K_inv;
-    //    cv::Mat R_inv;
+    Mat4 R;
+    Mat4 t;
+    Mat4 VM; // world to view matrix
+    Mat34 SM; // view to screen matrix
+    Mat4 Q; // normal vector transform matrix
+    Mat34 OM; // orthographic transform matrix
 
-    Eigen::Matrix3f K_inv;
-    Eigen::Matrix3f R_inv;
-
-    Eigen::Vector3f center;
+//    Eigen::Vector3f center;
 
     /**
      * constructor
@@ -68,39 +66,31 @@ public:
     ~Camera();
 
     /**
-     * Convert the c4d left-handed world coordinate to camera right-handed coordinate, render the inner matrix and outer matrix.
+     * Convert the c4d left-handed world coordinate to camera right-handed coordinate, write_result the inner matrix and outer matrix.
      */
-    void calculate();
+    void convert();
 
 private:
-    //    /**
-    //    * Calculate rotation matrix of H, P, B.
-    //    * @param H
-    //    * @param P
-    //    * @param B
-    //    */
-    //    void calculate_HPB(cv::Mat &H, cv::Mat &P, cv::Mat &B);
-
     /**
     * Calculate rotation matrix of H, P, B.
     * @param H
     * @param P
     * @param B
     */
-    void calculate_HPB(Eigen::Matrix3f &H, Eigen::Matrix3f &P, Eigen::Matrix3f &B);
+    void calculate_HPB(Mat3 &H, Mat3 &P, Mat3 &B);
 
     /**
-     * Calculate inner matrix K.
+     * Calculate inner matrix OM.
      */
     void calculate_K();
 
     /**
-     * Calculate rotation matrix R.
+     * Calculate rotation matrix R3.
      */
     void calculate_R();
 
     /**
-     * Calculate translation vector t.
+     * Calculate translation vector t3.
      */
     void calculate_t();
 
@@ -110,7 +100,6 @@ private:
      * @return rad
      */
     static float deg2rad(float deg);
-
 };
 
 #endif

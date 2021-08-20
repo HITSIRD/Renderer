@@ -6,7 +6,7 @@
 #define RENDERER_MESH_HPP
 
 #include <vector>
-#include "Eigen/Core"
+#include "Vertex.hpp"
 #include "Triangle.hpp"
 
 class Mesh
@@ -15,7 +15,7 @@ public:
     uint32_t num_vertex;
     uint32_t num_triangle;
 
-    std::vector<Eigen::Vector3f> vertices;
+    std::vector<Vertex> vertices;
     std::vector<Triangle> triangles;
 
     Mesh(){
@@ -27,7 +27,7 @@ public:
      *
      * @param vertex
      */
-    void add_vertex(Eigen::Vector3f &vertex);
+    void add_vertex(Vertex &vertex);
 
     /**
      *

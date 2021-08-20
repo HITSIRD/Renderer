@@ -4,7 +4,7 @@
 
 #include "Mesh.hpp"
 
-void Mesh::add_vertex(Eigen::Vector3f &vertex){
+void Mesh::add_vertex(Vertex &vertex){
     vertices.push_back(vertex);
     num_vertex++;
 }
