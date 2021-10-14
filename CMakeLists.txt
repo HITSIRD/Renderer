@@ -3,7 +3,7 @@ project(Renderer)
 
 set(CMAKE_CXX_STANDARD 20)
 
-SET(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/13.0.0/bin/clang-13)
+SET(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/13.0.0_1/bin/clang-13)
 #SET(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/gcc/11.2.0/bin/aarch64-apple-darwin20-g++-11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O1")
 
@@ -26,5 +26,5 @@ aux_source_directory(src SRC)
 
 add_executable(Renderer ${SRC})
 
-target_link_libraries(Renderer /opt/homebrew/Cellar/llvm/13.0.0/lib/libc++.dylib)
+target_link_libraries(Renderer /opt/homebrew/Cellar/llvm/13.0.0_1/lib/libc++.dylib)
 target_link_libraries(Renderer ${OpenCV_LIBRARIES})
