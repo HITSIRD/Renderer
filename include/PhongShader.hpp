@@ -24,7 +24,7 @@ public:
      * Shader. Automatically select the type.
      * @param vertex
      */
-    void vertex_shader(Vertex &vertex) override;
+    void vertex_shader(VertexP &vertex) override;
 
     /**
      * Shader. Automatically select the type.

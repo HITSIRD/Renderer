@@ -3,10 +3,13 @@
 //
 
 #include "Renderer.hpp"
+#include "Material.hpp"
+#include "iodata.hpp"
+#include "Mipmap.hpp"
+#include "Shader.hpp"
+#include "Util.hpp"
 #include <sstream>
 #include <iomanip>
-#include "iodata.hpp"
-#include "Util.hpp"
 #include <iostream>
 #include <vector>
 #include <fstream>
@@ -63,12 +66,22 @@ void Renderer::initialize() const
     //    s->num_threads = 4;
     //    cout << "max_threads: " << s->num_threads << endl;
 
-    if (s->shadow)
+    if (s->shadow == SHADOW)
     {
         cout << "shadow mapping..." << endl;
         for (auto l: s->light)
         {
             l->shadow_mapping(s->model); // calculate shadow map
+        }
+    }
+
+    // generate mipmap with base texture type
+    s->check();
+    if (s->texture_type == MIPMAP)
+    {
+        for (auto &mesh: s->model->meshes)
+        {
+            mesh->material->base_texture->initialize_mipmap();
         }
     }
 }
@@ -223,12 +236,12 @@ void Renderer::view_transform()
     }
 }
 
-inline bool Renderer::clipping(const Vertex &v_0, const Vertex &v_1, const Vertex &v_2)
+inline bool Renderer::clipping(const VertexP &v_0, const VertexP &v_1, const VertexP &v_2)
 {
-    if (v_0.clip.w() < 1e-5 || v_1.clip.w() < 1e-5 || v_2.clip.w() < 1e-5) // to avoid divide by 0
-    {
-        return true;
-    }
+    //    if (v_0.clip.w() < 1e-5 || v_1.clip.w() < 1e-5 || v_2.clip.w() < 1e-5) // to avoid divide by 0
+    //    {
+    //        return true;
+    //    }
     if (v_0.clip.x() < -v_0.clip.w() && v_1.clip.x() < -v_1.clip.w() && v_2.clip.x() < -v_2.clip.w())
     {
         return true;
@@ -256,6 +269,36 @@ inline bool Renderer::clipping(const Vertex &v_0, const Vertex &v_1, const Verte
     return false;
 }
 
+vector<VertexP> Renderer::clip_near(const VertexP &v_0, const VertexP &v_1, const VertexP &v_2)
+{
+    VertexP vertices[3] = {v_0, v_1, v_2};
+    vector<VertexP> output;
+    for (int i = 0; i < 3; i++)
+    {
+        const VertexP &start = vertices[i];
+        const VertexP &end = vertices[(i + 1) % 3];
+
+        if (end.clip.z() > 0)
+        {
+            if (start.clip.z() < 0)
+            {
+                float a = start.clip.z();
+                float b = end.clip.z();
+                float t = b / (b - a);
+                output.push_back(lerp(t, end, start));
+            }
+            output.push_back(end);
+        } else if (start.clip.z() > 0)
+        {
+            float a = end.clip.z();
+            float b = start.clip.z();
+            float t = b / (b - a);
+            output.push_back(lerp(t, start, end));
+        }
+    }
+    return output;
+}
+
 void Renderer::draw()
 {
     for (auto mesh: s->model->meshes)
@@ -265,25 +308,39 @@ void Renderer::draw()
         s->shader->set_uniform(&u); // set uniform
         s->shader->set_light(&s->light); // set light source
         s->shader->set_camera(s->camera); // set camera
+        s->shader->set_texture_type(s->texture_type); // set texture type
+        s->shader->set_sampler(s->sampler); // set sampler
 
-#pragma omp parallel for
-        for (int i = 0; i < mesh->num_vertex; i++)
-        {
-            s->shader->vertex_shader(mesh->vertices[i]);
-            perspective_division(mesh->vertices[i]);
-            mesh->vertices[i].screen = s->camera->M_viewport * mesh->vertices[i].screen;
-        }
+        //#pragma omp parallel for
+        //        for (int i = 0; i < mesh->num_vertex; i++)
+        //        {
+        //            s->shader->vertex_shader(mesh->vertices[i]);
+        //            perspective_division(mesh->vertices[i]);
+        //            mesh->vertices[i].screen = s->camera->M_viewport * mesh->vertices[i].screen;
+        //        }
 
 #pragma omp parallel for
         for (int i = 0; i < mesh->num_triangle; i++)
         {
-            const Vertex &v_0 = mesh->vertices[mesh->triangles[i].vertex_0];
-            const Vertex &v_1 = mesh->vertices[mesh->triangles[i].vertex_1];
-            const Vertex &v_2 = mesh->vertices[mesh->triangles[i].vertex_2];
+            auto v_0 = VertexP(mesh->vertices[mesh->triangles[i].vertex_0]);
+            auto v_1 = VertexP(mesh->vertices[mesh->triangles[i].vertex_1]);
+            auto v_2 = VertexP(mesh->vertices[mesh->triangles[i].vertex_2]);
+            s->shader->vertex_shader(v_0);
+            s->shader->vertex_shader(v_1);
+            s->shader->vertex_shader(v_2);
 
             if (!clipping(v_0, v_1, v_2))
             {
-                // face clipping
+                // perspective division
+                perspective_division(v_0);
+                perspective_division(v_1);
+                perspective_division(v_2);
+                // screen space coordinate
+                v_0.screen = s->camera->M_viewport * v_0.clip * v_0.z_rec;
+                v_1.screen = s->camera->M_viewport * v_1.clip * v_1.z_rec;
+                v_2.screen = s->camera->M_viewport * v_2.clip * v_2.z_rec;
+
+                // face culling
                 if (s->face_cull_mode == BACK)
                 {
                     float AB_x = v_1.screen.x() - v_0.screen.x();
@@ -307,18 +364,59 @@ void Renderer::draw()
                 }
                 num_triangle++;
                 draw_triangle(v_0, v_1, v_2, mesh->triangles[i].normal);
+            } else
+            {
+                vector<VertexP> vertices = clip_near(v_0, v_1, v_2);
+                for(auto &v: vertices)
+                {
+                    perspective_division(v);
+                    v.screen = s->camera->M_viewport * v.clip * v.z_rec;
+                }
+
+                int num_clip_tri = vertices.size();
+                for (int j = 0; j < num_clip_tri; j += 2)
+                {
+                    const VertexP &v0 = vertices[j % num_clip_tri];
+                    const VertexP &v1 = vertices[(j + 1) % num_clip_tri];
+                    const VertexP &v2 = vertices[(j + 2) % num_clip_tri];
+
+                    // face culling
+                    if (s->face_cull_mode == BACK)
+                    {
+                        float AB_x = v1.screen.x() - v0.screen.x();
+                        float AB_y = v1.screen.y() - v0.screen.y();
+                        float AC_x = v2.screen.x() - v0.screen.x();
+                        float AC_y = v2.screen.y() - v0.screen.y();
+                        if (AB_x * AC_y - AB_y * AC_x > 0)
+                        {
+                            continue;
+                        }
+                    } else if (s->face_cull_mode == FRONT)
+                    {
+                        float AB_x = v1.screen.x() - v0.screen.x();
+                        float AB_y = v1.screen.y() - v0.screen.y();
+                        float AC_x = v2.screen.x() - v0.screen.x();
+                        float AC_y = v2.screen.y() - v0.screen.y();
+                        if (AB_x * AC_y - AB_y * AC_x < 0)
+                        {
+                            continue;
+                        }
+                    }
+                    num_triangle++;
+                    draw_triangle(v0, v1, v2, mesh->triangles[i].normal);
+                }
             }
         }
-
-#pragma omp parallel for
-        for (int i = 0; i < mesh->num_vertex; i++)
-        {
-            perspective_restore(mesh->vertices[i]); // perspective restore
-        }
     }
+
+    //#pragma omp parallel for
+    //        for (int i = 0; i < mesh->num_vertex; i++)
+    //        {
+    //            perspective_restore(mesh->vertices[i]); // perspective restore
+    //        }
 }
 
-void Renderer::draw_triangle(const Vertex &v_0, const Vertex &v_1, const Vertex &v_2, const float4 &normal)
+void Renderer::draw_triangle(const VertexP &v_0, const VertexP &v_1, const VertexP &v_2, const float4 &normal)
 {
     // real bounding box
     int min_x = max((int)min(v_0.screen.x(), min(v_1.screen.x(), v_2.screen.x())), 0);
@@ -326,10 +424,9 @@ void Renderer::draw_triangle(const Vertex &v_0, const Vertex &v_1, const Vertex 
     int max_x = min((int)max(v_0.screen.x(), max(v_1.screen.x(), v_2.screen.x())) + 1, s->camera->x - 1);
     int max_y = min((int)max(v_0.screen.y(), max(v_1.screen.y(), v_2.screen.y())) + 1, s->camera->y - 1);
 
-    // rasterization
+    int index = min_y * s->camera->x;
     for (int i = min_y; i <= max_y; i++)
     {
-        int index = i * s->camera->x;
         for (int j = min_x; j <= max_x; j++)
         {
             float center_x = float(j) + 0.5f;
@@ -343,30 +440,70 @@ void Renderer::draw_triangle(const Vertex &v_0, const Vertex &v_1, const Vertex 
             float AB = v1x * v0y - v1y * v0x;
             float BC = v2x * v1y - v2y * v1x;
             float CA = v0x * v2y - v0y * v2x;
-            if(AB > 0 && BC > 0 && CA > 0)
+            if (AB > 0 && BC > 0 && CA > 0)
             {
-                float u, v, w;
-                if (is_in_triangle(AB, BC, CA, u, v, w))
+                float S = 1.0f / (AB + BC + CA);
+                float u = BC * S;
+                float v = CA * S;
+                float w = AB * S;
+                float z = lerp(v_0.screen.z(), v_1.screen.z(), v_2.screen.z(), u, v, w);
+                // early-z test
+                if (z < s->z_buffer[index + j])
                 {
-                    float z = lerp(v_0.screen.z(), v_1.screen.z(), v_2.screen.z(), u, v, w);
-                    // early-z test
-                    if (z < s->z_buffer[index + j])
+                    num_frag++;
+                    // perspective correct interpolation
+                    Fragment frag = lerp(v_0, v_1, v_2, u, v, w);
+                    frag.x = j;
+                    frag.y = i;
+                    frag.z = z;
+                    frag.flat_normal = normal;
+
+                    // calculate texture space mapping
+                    if (s->texture_type == MIPMAP)
                     {
-                        num_frag++;
-                        // perspective correct interpolation
-                        Fragment frag = lerp(v_0, v_1, v_2, u, v, w);
-                        frag.x = j;
-                        frag.y = i;
-                        frag.z = z;
-                        frag.flat_normal = normal;
-                        // fragment perspective restore
-                        perspective_restore(frag);
-                        s->shader->fragment_shader(frag);
-                        write_color(frag);
+                        center_x = float(j) + 1.5f;
+                        center_y = float(i) + 0.5f;
+                        v0x = v_0.screen.x() - center_x;
+                        v0y = v_0.screen.y() - center_y;
+                        v1x = v_1.screen.x() - center_x;
+                        v1y = v_1.screen.y() - center_y;
+                        v2x = v_2.screen.x() - center_x;
+                        v2y = v_2.screen.y() - center_y;
+                        AB = v1x * v0y - v1y * v0x;
+                        BC = v2x * v1y - v2y * v1x;
+                        CA = v0x * v2y - v0y * v2x;
+                        S = 1.0f / (AB + BC + CA);
+                        u = BC * S;
+                        v = CA * S;
+                        w = AB * S;
+                        frag.texture_x = lerp(v_0.texture_uv, v_1.texture_uv, v_2.texture_uv, u, v, w);
+
+                        center_x = float(j) + 0.5f;
+                        center_y = float(i) + 1.5f;
+                        v0x = v_0.screen.x() - center_x;
+                        v0y = v_0.screen.y() - center_y;
+                        v1x = v_1.screen.x() - center_x;
+                        v1y = v_1.screen.y() - center_y;
+                        v2x = v_2.screen.x() - center_x;
+                        v2y = v_2.screen.y() - center_y;
+                        AB = v1x * v0y - v1y * v0x;
+                        BC = v2x * v1y - v2y * v1x;
+                        CA = v0x * v2y - v0y * v2x;
+                        S = 1.0f / (AB + BC + CA);
+                        u = BC * S;
+                        v = CA * S;
+                        w = AB * S;
+                        frag.texture_y = lerp(v_0.texture_uv, v_1.texture_uv, v_2.texture_uv, u, v, w);
                     }
+
+                    // fragment perspective restore
+                    perspective_restore(frag);
+                    s->shader->fragment_shader(frag);
+                    write_color(frag);
                 }
             }
         }
+        index += s->camera->x;
     }
 }
 

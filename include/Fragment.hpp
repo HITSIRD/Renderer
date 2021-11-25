@@ -15,10 +15,13 @@ public:
     float4 flat_normal; // flat normal vector
     float4 normal; // interpolation normal vector
     float4 world; // world space
-//    vec4 screen; // screen space coordinate
+//    float4 screen; // screen space coordinate
     float2 texture_uv;
     float clip_z;
     float z;
+
+    float2 texture_x; // to get du/dx, dv/dx
+    float2 texture_y; // to get du/dy, dv/dy
 
     Fragment(){}
 

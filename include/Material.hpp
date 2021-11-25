@@ -14,8 +14,8 @@ protected:
     Shader *shader;
 
 public:
-    std::shared_ptr<Texture> base_texture;
-    std::shared_ptr<Texture> normal;
+    std::shared_ptr<Texture2D> base_texture;
+    std::shared_ptr<Texture2D> normal_texture;
 //    std::shared_ptr<Texture> base_texture;
 //    std::shared_ptr<Texture> base_texture;
 //    std::shared_ptr<Texture> base_texture;
@@ -39,7 +39,7 @@ public:
      *
      * @param t
      */
-    void set_texture(Texture *t);
+    void set_texture(Texture2D *t);
 
     /**
      *

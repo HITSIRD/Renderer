@@ -3,10 +3,10 @@
 //
 
 #include "FlatShader.hpp"
-#include <Light.hpp>
+#include "Light.hpp"
 #include <vector>
 
-using namespace std;
+#define MIN_LUM 0.003921569
 
 FlatShader *FlatShader::shader = nullptr;
 
@@ -28,52 +28,64 @@ void FlatShader::destroy()
     shader = nullptr;
 }
 
-void FlatShader::vertex_shader(Vertex &vertex)
+void FlatShader::vertex_shader(VertexP &vertex)
 {
-    vertex.clip = uniform->camera->VP * vertex.world;
-    vertex.z = 1.0f / vertex.clip.w();
-    vertex.screen = vertex.clip * vertex.z;
+    vertex.clip = uniform->camera->VP * vertex.position;
+    vertex.z_rec = 1.0f / vertex.clip.w();
 }
 
 void FlatShader::fragment_shader(Fragment &frag)
 {
     float4 albedo = frag.color;
     float4 color(0, 0, 0, 0);
-    if (uniform->texture)
+    if (uniform->base_texture)
     {
-        albedo = uniform->texture->sample(frag.texture_uv);
+        if (uniform->texture_type == NORMAL_TEXTURE)
+        {
+            albedo = uniform->base_texture->sample(frag.texture_uv, uniform->sampler);
+        } else if (uniform->texture_type == MIPMAP)
+        {
+            albedo = uniform->base_texture->sample(frag.texture_uv, frag.texture_x, frag.texture_y, uniform->sampler);
+        }
     }
     float4 view = uniform->camera->camera_center - frag.world;
     view.normalize();
     color += uniform->ka * albedo; // ambient
+    //    albedo = float4(uniform->ks, uniform->ks, uniform->ks, 1.0f);
+    //    color += uniform->ka * albedo; // ambient
 
     for (const auto &light: *uniform->light_source)
     {
         if (light->type == POINT)
-        {            float s = shadow(light, frag);
-            if(s > 0)
+        {
+            float s = shadow(light, frag);
+            if (s > 0)
             {
                 auto *point = (PointLight *)light;
-                float4 dir_light = (point->center - frag.world).normalized();
-                float distance = (point->center - frag.world).lpNorm<2>();
+                float4 dir_light = point->center - frag.world;
+                float distance = dir_light.dot(dir_light);
+                float lum = light->luminance / distance;
 
-                float lum = light->luminance / (distance * distance);
-                float diff = lum * frag.flat_normal.dot(dir_light);
-                diff = max(diff, 0.0f);
-                float4 diffuse(diff, diff, diff, 1.0f);
+                if(lum > MIN_LUM)
+                {
+                    dir_light = dir_light.normalized();
 
-                // Angle between reflected light and viewing
-                float4 bisector = (view + dir_light).normalized();
-                float spec = (light->luminance / (distance * distance)) *
-                             powf(max(frag.flat_normal.dot(bisector), 0.0f), uniform->spec_rank);
-                float4 specular(spec, spec, spec, 1.0f);
+                    float diff = lum * frag.flat_normal.dot(dir_light);
+                    diff = max(diff, 0.0f);
+                    float4 diffuse(diff, diff, diff, 1.0f);
 
-                color += s * (uniform->kd * diffuse + uniform->ks * specular).cwiseProduct(albedo);
+                    // Angle between reflected light and viewing
+                    float4 bisector = (view + dir_light).normalized();
+                    float spec = lum * powf(max(frag.flat_normal.dot(bisector), 0.0f), uniform->spec_rank);
+                    float4 specular(spec, spec, spec, 1.0f);
+
+                    color += s * (uniform->kd * diffuse.cwiseProduct(albedo) + uniform->ks * specular);
+                }
             }
         } else if (light->type == SUN)
         {
             float s = shadow(light, frag);
-            if(s > 0)
+            if (s > 0)
             {
                 auto *sun = (SunLight *)light;
                 float diff = light->luminance * frag.flat_normal.dot(sun->direct);
@@ -85,7 +97,7 @@ void FlatShader::fragment_shader(Fragment &frag)
                 float spec = light->luminance * powf(max(frag.flat_normal.dot(bisector), 0.0f), uniform->spec_rank);
                 float4 specular(spec, spec, spec, 1.0f);
 
-                color += s * (uniform->kd * diffuse + uniform->ks * specular).cwiseProduct(albedo);
+                color += s * (uniform->kd * diffuse.cwiseProduct(albedo) + uniform->ks * specular);
             }
         }
     }

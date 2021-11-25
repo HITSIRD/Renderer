@@ -3,6 +3,7 @@
 //
 
 #include "State.hpp"
+#include <iostream>
 
 void FrameBuffer::reset() const
 {
@@ -109,6 +110,17 @@ void State::reset_buffer() const
 //    }
 
     frame_buffer->reset();
+}
+
+void State::check()
+{
+    if(texture_type == NORMAL_TEXTURE)
+    {
+        if(sampler == TRILINEAR || sampler == ANISOTROPIC)
+        {
+            std::cerr << "ERROR SAMPLER TYPE" << endl;
+        }
+    }
 }
 
 void State::destroy() const

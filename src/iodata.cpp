@@ -180,31 +180,97 @@ State *iodata::load_config(const string &config)
             sun_light->set_look_at(center, focal_center, up);
             s->light.push_back(sun_light);
             continue;
-        } else if (type == "SHADOW_ON")
+        } else if (type == "SHADOW")
         {
-            cout << "SHADOW_ON" << endl;
-            s->shadow = true;
-            continue;
-        } else if (type == "SHADOW_OFF")
+            cout << "SHADOW ";
+            in >> type;
+            if (type == "ON")
+            {
+                cout << "ON" << endl;
+                s->shadow = SHADOW;
+                continue;
+            } else if (type == "OFF")
+            {
+                cout << "OFF" << endl;
+                s->shadow = NO_SHADOW;
+                continue;
+            } else
+            {
+                cerr << "SHADOW TYPE ERROR: " + type << endl;
+                throw exception();
+            }
+        } else if (type == "CULL_MODE")
         {
-            cout << "SHADOW_OFF" << endl;
-            s->shadow = false;
-            continue;
-        } else if (type == "BACK")
+            cout << "CULL_MODE ";
+            in >> type;
+            if (type == "BACK")
+            {
+                cout << "BACK" << endl;
+                s->face_cull_mode = BACK;
+                continue;
+            } else if (type == "FRONT")
+            {
+                cout << "FRONT" << endl;
+                s->face_cull_mode = FRONT;
+                continue;
+            } else if (type == "NONE")
+            {
+                cout << "CULL_MODE NONE" << endl;
+                s->face_cull_mode = NONE;
+                continue;
+            } else
+            {
+                cerr << "CULL MODE TYPE ERROR: " + type << endl;
+                throw exception();
+            }
+        } else if (type == "TEXTURE_TYPE")
         {
-            cout << "CULL_MODE BACK" << endl;
-            s->face_cull_mode = BACK;
-            continue;
-        } else if (type == "FRONT")
+            cout << "TEXTURE_TYPE ";
+            in >> type;
+            if (type == "NORMAL")
+            {
+                cout << "NORMAL" << endl;
+                s->texture_type = NORMAL_TEXTURE;
+                continue;
+            } else if (type == "MIPMAP")
+            {
+                cout << "MIPMAP" << endl;
+                s->texture_type = MIPMAP;
+                continue;
+            } else
+            {
+                cerr << "TEXTURE TYPE ERROR: " + type << endl;
+                throw exception();
+            }
+        } else if (type == "TEXTURE_SAMPLER")
         {
-            cout << "CULL_MODE FRONT" << endl;
-            s->face_cull_mode = FRONT;
-            continue;
-        } else if (type == "NONE")
-        {
-            cout << "CULL_MODE NONE" << endl;
-            s->face_cull_mode = NONE;
-            continue;
+            cout << "TEXTURE_SAMPLER ";
+            in >> type;
+            if (type == "NORMAL")
+            {
+                cout << "NORMAL" << endl;
+                s->sampler = NORMAL;
+                continue;
+            } else if (type == "BILINEAR")
+            {
+                cout << "BILINEAR" << endl;
+                s->sampler = BILINEAR;
+                continue;
+            } else if (type == "TRILINEAR")
+            {
+                cout << "TRILINEAR" << endl;
+                s->sampler = TRILINEAR;
+                continue;
+            } else if (type == "ANISOTROPIC")
+            {
+                cout << "ANISOTROPIC" << endl;
+                s->sampler = ANISOTROPIC;
+                continue;
+            } else
+            {
+                cerr << "TEXTURE SAMPLER TYPE ERROR: " + type << endl;
+                throw exception();
+            }
         } else
         {
             cerr << "TYPE ERROR: " + type << endl;
@@ -316,13 +382,13 @@ void iodata::read_ply(const string &file_name, Model *model)
     float2 uv;
     // to calculate vertex normal
     float4 *normal_sum = new float4[num_vertex]; // sum of triangle normal vector contains vertex
-    int *triangle_num_index = new int[num_vertex]; // triangle number contains vertex
+    //    int *triangle_num_index = new int[num_vertex]; // triangle number contains vertex
     mesh->vertices.reserve(num_vertex);
     mesh->triangles.reserve(num_triangle);
     for (int i = 0; i < num_vertex; i++)
     {
         normal_sum[i] << 0, 0, 0, 0;
-        triangle_num_index[i] = 0;
+        //        triangle_num_index[i] = 0;
     }
 
     for (int i = 0; i < num_vertex; i++)
@@ -383,9 +449,9 @@ void iodata::read_ply(const string &file_name, Model *model)
             normal_sum[index_0] += triangle.normal;
             normal_sum[index_1] += triangle.normal;
             normal_sum[index_2] += triangle.normal;
-            triangle_num_index[index_0]++;
-            triangle_num_index[index_1]++;
-            triangle_num_index[index_2]++;
+            //            triangle_num_index[index_0]++;
+            //            triangle_num_index[index_1]++;
+            //            triangle_num_index[index_2]++;
         } else if (num == 4)
         {
             in >> index_0 >> index_1 >> index_2 >> index_3;
@@ -396,15 +462,15 @@ void iodata::read_ply(const string &file_name, Model *model)
             normal_sum[index_0] += triangle_0.normal;
             normal_sum[index_1] += triangle_0.normal;
             normal_sum[index_2] += triangle_0.normal;
-            triangle_num_index[index_0]++;
-            triangle_num_index[index_1]++;
-            triangle_num_index[index_2]++;
+            //            triangle_num_index[index_0]++;
+            //            triangle_num_index[index_1]++;
+            //            triangle_num_index[index_2]++;
             normal_sum[index_0] += triangle_1.normal;
             normal_sum[index_2] += triangle_1.normal;
             normal_sum[index_3] += triangle_1.normal;
-            triangle_num_index[index_0]++;
-            triangle_num_index[index_2]++;
-            triangle_num_index[index_3]++;
+            //            triangle_num_index[index_0]++;
+            //            triangle_num_index[index_2]++;
+            //            triangle_num_index[index_3]++;
         }
     }
     in.close();
@@ -412,10 +478,11 @@ void iodata::read_ply(const string &file_name, Model *model)
     // calculate vertex normal
     for (int i = 0; i < num_vertex; i++)
     {
-        mesh->vertices[i].normal = normal_sum[i] / (float)triangle_num_index[i];
+        //        mesh->vertices[i].normal = normal_sum[i] / (float)triangle_num_index[i];
+        mesh->vertices[i].normal = normal_sum[i].normalized();
     }
     delete[] normal_sum;
-    delete[] triangle_num_index;
+    //    delete[] triangle_num_index;
 
     cout << "vertex number: " << mesh->num_vertex << endl;
     cout << "triangles number: " << mesh->num_triangle << endl;
@@ -467,7 +534,7 @@ void iodata::read_ply(const string &file_name, Model *model)
         if (type == "TEXTURE")
         {
             in >> texture_file;
-            auto *texture = new Texture(texture_file);
+            auto *texture = new Texture2D(texture_file);
             m->set_texture(texture);
             cout << "base_texture: " << texture_file << endl;
         } else
@@ -504,7 +571,7 @@ void iodata::write_ply(Mesh *mesh, const string &file_name)
 
     for (auto vertex: mesh->vertices)
     {
-        out << vertex.world.x() << " " << vertex.world.y() << " " << vertex.world.z() << " " << 255 << " " << 255 << " "
+        out << vertex.position.x() << " " << vertex.position.y() << " " << vertex.position.z() << " " << 255 << " " << 255 << " "
             << 255 << " " << 255 << endl;
     }
 

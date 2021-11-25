@@ -141,15 +141,11 @@ void SunLight::set_viewport(int _x, int _y, float ccd_size_x, float ccd_size_y, 
     float t = f * tanf(FovV * 0.5f);
     float b = -t;
 
-    M_orth << 2.0f / (r - l), 0, 0, (l + r) / (l - r),
-            0,              2.0f / (t - b), 0, (b + t) / (b - t),
-            0,              0, 1.0f / (f - n), n / (n - f),
-            0,              0, 0, 1.0f;
+    M_orth << 2.0f / (r - l), 0, 0, (l + r) / (l - r), 0, 2.0f / (t - b), 0, (b + t) / (b - t), 0, 0, 1.0f / (f - n),
+            n / (n - f), 0, 0, 0, 1.0f;
 
-    M_view << (float)x * 0.5f, 0, 0, (float)x * 0.5f,
-            0, (float)y * 0.5f, 0, (float)y * 0.5f,
-            0,                     0, 1.0f, 0,
-            0,                     0, 0, 1.0f;
+    M_view << (float)x * 0.5f, 0, 0, (float)x * 0.5f, 0, (float)y * 0.5f, 0, (float)y *
+                                                                             0.5f, 0, 0, 1.0f, 0, 0, 0, 0, 1.0f;
 }
 
 void SunLight::set_viewport(int _x, int _y, float range_x)
@@ -164,15 +160,11 @@ void SunLight::set_viewport(int _x, int _y, float range_x)
     float t = range_x * 0.5f * (float)y / (float)x;
     float b = -t;
 
-    M_orth << 2.0f / (r - l), 0, 0, (l + r) / (l - r),
-            0,              2.0f / (t - b), 0, (b + t) / (b - t),
-            0,              0, 1.0f / (f - n), n / (n - f),
-            0,              0, 0, 1.0f;
+    M_orth << 2.0f / (r - l), 0, 0, (l + r) / (l - r), 0, 2.0f / (t - b), 0, (b + t) / (b - t), 0, 0, 1.0f / (f - n),
+            n / (n - f), 0, 0, 0, 1.0f;
 
-    M_view << (float)x * 0.5f, 0, 0, (float)x * 0.5f,
-            0, (float)y * 0.5f, 0, (float)y * 0.5f,
-            0,                     0, 1.0f, 0,
-            0,                     0, 0, 1.0f;
+    M_view << (float)x * 0.5f, 0, 0, (float)x * 0.5f, 0, (float)y * 0.5f, 0, (float)y *
+                                                                             0.5f, 0, 0, 1.0f, 0, 0, 0, 0, 1.0f;
 }
 
 void SunLight::set_look_at(float4 light_center, float4 _focal_center, float4 _up)
@@ -197,17 +189,17 @@ void SunLight::shadow_mapping(Model *model)
     delete shadow_map;
     shadow_map = new ShadowMap(x, y);
 
-    for (auto mesh: model->meshes)
+    for (const auto &mesh: model->meshes)
     {
         auto *point_2d = new float4[mesh->num_vertex];
         // Calculate depth, back projection point_2d coordinate of every vertex
         for (int i = 0; i < mesh->num_vertex; i++)
         {
-            point_2d[i] = MO * mesh->vertices[i].world;
+            point_2d[i] = MO * mesh->vertices[i].position;
         }
 
 #pragma omp parallel for
-        for (const auto &triangle:mesh->triangles)
+        for (const auto &triangle: mesh->triangles)
         {
             float4 v_0 = point_2d[triangle.vertex_0];
             float4 v_1 = point_2d[triangle.vertex_1];
@@ -236,16 +228,16 @@ void SunLight::shadow_mapping(Model *model)
                     float AB = v1x * v0y - v1y * v0x;
                     float BC = v2x * v1y - v2y * v1x;
                     float CA = v0x * v2y - v0y * v2x;
-                    if(AB > 0 && BC > 0 && CA > 0)
+                    if (AB > 0 && BC > 0 && CA > 0)
                     {
-                        float u, v, w;
-                        if (is_in_triangle(AB, BC, CA, u, v, w))
+                        float S = 1.0f / (AB + BC + CA);
+                        float u = BC * S;
+                        float v = CA * S;
+                        float w = AB * S;
+                        float depth = lerp(v_0.z(), v_1.z(), v_2.z(), u, v, w);
+                        if (depth < shadow_map->map[index + j])
                         {
-                            float depth = lerp(v_0.z(), v_1.z(), v_2.z(), u, v, w);
-                            if (depth < shadow_map->map[index + j])
-                            {
-                                shadow_map->map[index + j] = depth;
-                            }
+                            shadow_map->map[index + j] = depth;
                         }
                     }
                 }
@@ -253,5 +245,5 @@ void SunLight::shadow_mapping(Model *model)
         }
         delete[] point_2d;
     }
-//    iodata::write_depth_image(this);
+    //    iodata::write_depth_image(this);
 }

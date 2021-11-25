@@ -66,7 +66,16 @@ private:
      * @param v_2
      * @return
      */
-    static bool clipping(const Vertex &v_0, const Vertex &v_1, const Vertex &v_2);
+    static bool clipping(const VertexP &v_0, const VertexP &v_1, const VertexP &v_2);
+
+    /**
+     * Homogeneous space clipping
+     * @param v_0
+     * @param v_1
+     * @param v_2
+     * @return
+     */
+    static std::vector<VertexP> clip_near(const VertexP &v_0, const VertexP &v_1, const VertexP &v_2);
 
     /**
      *
@@ -80,7 +89,7 @@ private:
      * @param v_2
      * @param normal
      */
-    void draw_triangle(const Vertex &v_0, const Vertex &v_1, const Vertex &v_2, const float4 &normal);
+    inline void draw_triangle(const VertexP &v_0, const VertexP &v_1, const VertexP &v_2, const float4 &normal);
 
     /**
      *

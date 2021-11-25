@@ -47,8 +47,8 @@ public:
         vertex_0 = v_0;
         vertex_1 = v_1;
         vertex_2 = v_2;
-        float4 OA = vertices[v_1].world - vertices[v_0].world;
-        float4 OB = vertices[v_2].world - vertices[v_0].world;
+        float4 OA = vertices[v_1].position - vertices[v_0].position;
+        float4 OB = vertices[v_2].position - vertices[v_0].position;
 
         normal << OA.cross3(OB);
         //        cout << OA.cross(OB) << endl;

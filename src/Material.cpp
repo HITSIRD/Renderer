@@ -18,15 +18,15 @@ void Material::set_shader(Shader *s)
     shader = s;
 }
 
-void Material::set_texture(Texture *t)
+void Material::set_texture(Texture2D *t)
 {
-    base_texture = std::make_shared<Texture>(*t);
+    base_texture = std::make_shared<Texture2D>(*t);
 }
 
 Uniform Material::get_uniform() const
 {
     Uniform u = Uniform(ambient, diffuse, specular, spec_rank);
-    u.texture = base_texture.get();
+    u.base_texture = base_texture.get();
     return u;
 }
 

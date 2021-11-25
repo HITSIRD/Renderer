@@ -1,4 +1,4 @@
-/Users/wenyongyan/Downloads/67P.ply
-PHONG
-0 0.9 0.1
+Data/Assets/box.ply
+FLAT
+0.2 0.3 0.5
 64.0

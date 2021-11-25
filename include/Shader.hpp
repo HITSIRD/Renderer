@@ -9,12 +9,9 @@
 #include "Vertex.hpp"
 #include "Camera.hpp"
 #include "Texture.hpp"
+#include "State.hpp"
 
 class Light;
-
-#define FLAT_SHADING 1
-#define PHONG_SHADING 2
-#define EPSILON 0.001f
 
 class Uniform
 {
@@ -26,12 +23,15 @@ public:
 
     Camera *camera;
     std::vector<Light *> *light_source;
-    Texture *texture;
+
+    Texture2D *base_texture;
+    TextureType texture_type;
+    SamplerType sampler;
 
     Uniform(){}
 
     Uniform(float _ka, float _kd, float _ks, float _spec):ka(_ka), kd(_kd), ks(_ks), spec_rank(_spec),
-                                                          light_source(nullptr){}
+                                                          light_source(nullptr), sampler(NORMAL){}
 
     ~Uniform() = default;
 };
@@ -75,6 +75,24 @@ public:
     }
 
     /**
+     * Set texture type.
+     * @param type
+     */
+    void set_texture_type(TextureType type)
+    {
+        uniform->texture_type = type;
+    }
+
+    /**
+     * Set texture sampler type.
+     * @param type
+     */
+    void set_sampler(SamplerType type)
+    {
+        uniform->sampler = type;
+    }
+
+    /**
     * Get a instance and reset.
     */
     static Shader *instance()
@@ -84,7 +102,7 @@ public:
         return shader;
     };
 
-    virtual void vertex_shader(Vertex &vertex){}
+    virtual void vertex_shader(VertexP &vertex){}
 
     virtual void fragment_shader(Fragment &frag){}
 

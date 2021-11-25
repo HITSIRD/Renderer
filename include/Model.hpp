@@ -7,7 +7,8 @@
 
 #include "Vertex.hpp"
 #include "Triangle.hpp"
-#include "Material.hpp"
+
+class Material;
 
 class Mesh
 {
@@ -24,8 +25,8 @@ public:
 
     ~Mesh()
     {
-        delete material;
-        material = nullptr;
+//        delete material;
+//        material = nullptr;
     }
 
     /**

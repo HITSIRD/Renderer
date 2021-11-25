@@ -7,26 +7,41 @@
 
 #include "Camera.hpp"
 #include "Light.hpp"
-#include "Shader.hpp"
 #include "Model.hpp"
+#include "Fragment.hpp"
+#include "Texture.hpp"
 
-enum RENDER_SCENE
+class Shader;
+
+enum RenderScene
 {
     FLAT, PHONG, PBR
 };
 
-enum FACE_CULL_MODE
+enum FaceCullMode
 {
     NONE, FRONT, BACK
 };
 
-class FrameBuffer{
+enum ShadowMode
+{
+    SHADOW, NO_SHADOW
+};
+
+enum TextureType
+{
+    NORMAL_TEXTURE, MIPMAP
+};
+
+class FrameBuffer
+{
 public:
     int x;
     int y;
     unsigned char *buffer;
 
-    FrameBuffer(){
+    FrameBuffer()
+    {
         x = 0;
         y = 0;
         buffer = nullptr;
@@ -59,36 +74,29 @@ public:
     Model *model; // meshes after clipping, update after each frame
     bool changed; // if current s is changed
 
-//    RENDER_SCENE render_scene;
-    FACE_CULL_MODE face_cull_mode;
-    bool shadow; // if draw shadow
+    //    RENDER_SCENE render_scene;
+    FaceCullMode face_cull_mode;
+    SamplerType sampler;
+    TextureType texture_type;
+    ShadowMode shadow; // if draw shadow
 
     Camera *camera;
-    vector<Light*> light;
+    vector<Light *> light;
 
     Shader *shader;
 
     float *stencil_buffer;
     float *z_buffer; // depth buffer
-//    bool *test_buffer; // test
+    //    bool *test_buffer; // test
     float4 *color_buffer; // store current pixel color
     FrameBuffer *frame_buffer;
 
     int num_threads; // max thread number
 
-    State():
-    model(new Model()),
-    changed(true),
-    face_cull_mode(BACK),
-    shadow(false),
-    camera(nullptr),
-    shader(nullptr),
-    stencil_buffer(nullptr),
-    z_buffer(nullptr),
-//    test_buffer(nullptr),
-    color_buffer(nullptr),
-    num_threads(0)
-    {}
+    State():model(new Model()), changed(true), face_cull_mode(BACK), sampler(NORMAL), texture_type(NORMAL_TEXTURE),
+            shadow(NO_SHADOW), camera(nullptr), shader(nullptr), stencil_buffer(nullptr), z_buffer(nullptr),
+            //    test_buffer(nullptr),
+            color_buffer(nullptr), num_threads(0){}
 
     ~State();
 
@@ -97,8 +105,19 @@ public:
      */
     void reset_buffer() const;
 
+    /**
+     *
+     */
     void clear();
 
+    /**
+     *
+     */
+    void check();
+
+    /**
+     *
+     */
     void destroy() const;
 };
 

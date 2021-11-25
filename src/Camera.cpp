@@ -18,7 +18,7 @@ void Camera::set_viewport(int _x, int _y, float ccd_size_x, float ccd_size_y, fl
     FovH = 2.0f * atanf(ccd_size_x / (2.0f * focal));
     FovV = 2.0f * atanf(ccd_size_y / (2.0f * focal));
 
-    n = focal / 1000.0f; // mm to m
+    n = focal / 100.0f; // mm to m
     f = 10000.0f; // far is_clip plane
     float r = f * tanf(FovH * 0.5f);
     float l = -r;
