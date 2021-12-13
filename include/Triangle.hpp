@@ -6,55 +6,44 @@
 #define RENDERER_TRIANGLE_HPP
 
 #include "Vertex.hpp"
-#include "Eigen/Geometry"
-#include <iostream>
-#include <vector>
+#include "Primitive.hpp"
 
-using namespace std;
-
-class Triangle
+class Triangle:public Primitive
 {
 public:
-    //    Eigen::Vector3f vertex_0;
-    //    Eigen::Vector3f vertex_1;
-    //    Eigen::Vector3f vertex_2;
-
-    // Index of vertices
-    uint32_t vertex_0;
-    uint32_t vertex_1;
-    uint32_t vertex_2;
-
-    /**
-     * Parameters of plane equation Ax + By + Cz + D = 0
-     */
-    //    float A;
-    //    float B;
-    //    float C;
-    //    float D;
-
+    uint32_t vertexIndex[3]; // vertices index
     float4 normal; // Normal vector of triangle plane
+    float4 center; // primitive center coordinate in world space
 
-//    bool is_clip; // if is clipped
+    Triangle();
 
     /**
-     * A world on plane
+     *
+     * @param vertices
+     * @param v0
+     * @param v1
+     * @param v2
      */
-    //    Eigen::Vector3f plane_point;
+    Triangle(const std::vector<Vertex> &vertices, uint32_t v0, uint32_t v1, uint32_t v2);
 
-    Triangle(std::vector<Vertex> &vertices, uint32_t v_0, uint32_t v_1, uint32_t v_2)
-    {
-//        is_clip = false;
-        vertex_0 = v_0;
-        vertex_1 = v_1;
-        vertex_2 = v_2;
-        float4 OA = vertices[v_1].position - vertices[v_0].position;
-        float4 OB = vertices[v_2].position - vertices[v_0].position;
+    ~Triangle() override;
 
-        normal << OA.cross3(OB);
-        //        cout << OA.cross(OB) << endl;
-        //                normal << A, B, C, 0;
-        normal.normalize(); // normalize
-    };
+    /**
+     *
+     * @param ray
+     * @param t_min
+     * @param t_max
+     * @param vertices
+     * @param record
+     * @return
+     */
+    bool hit(Ray &ray, float t_min, float t_max, const std::vector<Vertex> &vertices, HitRecord &record) override;
+
+    /**
+     * Destroy the leaf node. For a triangle, do nothing.
+     * @param node
+     */
+    void destroy(Primitive *node) override;
 };
 
 #endif

@@ -4,64 +4,26 @@
 
 #include "Light.hpp"
 #include "Util.hpp"
-#include "iodata.hpp"
+#include "Eigen/Geometry"
 
-//Light::Light(
-//        int _pixel_x, int _pixel_y, float _ccd_size_x, float _ccd_size_y, float _focal, float _x, float _y, float _z,
-//        float _h, float _p, float _b):x(_pixel_x), y(_pixel_y), pitch(_h), yaw(_p), roll(_b)
-//{
-//    luminance = 1.0f;
-//
-//    center << _x / 100.0f, -_y / 100.0f, _z / 100.0f, 0; // left system to right system
-//    FovH = 2 * atanf(_ccd_size_x / (2 * _focal));
-//    FovV = 2 * atanf(_ccd_size_y / (2 * _focal));
-//    calculate_R();
-//
-//    vec3 w_c(center.x(), center.y(), center.z());
-//    l_t3 = -(l_R3 * w_c);
-//    RowVector4f term_0(0, 0, 0, 1);
-//    M_view << l_R3, l_t3, term_0;
-//
-//    Q = M_view.inverse().transpose();
-//
-//    n = _focal / 1000.0f; // mm to m
-//    f = 1000.0f; // far is_clip plane
-//    r = f * tanf(FovH / 2.0f);
-//    l = -r;
-//    t = f * tanf(FovV / 2.0f);
-//    b = -t;
-//
-//    M_per << 2.0f * f / (r - l), 0, 0, 0, 0, 2.0f * f / (t - b), 0, 0, 0, 0, f / (f - n), f * n /
-//                                                                                          (n - f), 0, 0, 1.0f, 0;
-//
-//    M_orth << 2.0f / (r - l), 0, 0, (l + r) / (l - r), 0, 2.0f / (t - b), 0, (b + t) / (b - t), 0, 0, 1.0f / (f - n),
-//            n / (n - f), 0, 0, 0, 1.0f;
-//
-//    M_viewport << (float)_pixel_x * 0.5f, 0, 0, (float)_pixel_x * 0.5f, 0, (float)_pixel_y * 0.5f, 0, (float)_pixel_y *
-//                                                                                                  0.5f, 0, 0, 1.0f, 0, 0, 0, 0, 1.0f;
-//
-//    P = M_viewport * M_per * M_view;
-//    O = M_viewport * M_orth * M_view;
-//    shadow_map = nullptr;
-//}
+using namespace std;
+using namespace Render;
 
 Light::~Light() = default;
 
-void Light::shadow_mapping(Model *model){}
+void Light::shadowMapping(Model *model){}
 
-PointLight::PointLight(float _luminance, int _pixel_size, float _x, float _y, float _z)
+PointLight::PointLight(float power, int _shadowSize, float4 _positon)
 {
     type = POINT;
-    luminance = _luminance;
-    shadow_size = _pixel_size;
+    intensity = power;
+    shadowSize = _shadowSize;
 
-    center << _x / 100.0f, -_y / 100.0f, _z / 100.0f, 1.0f; // left system to right system
-    Eigen::RowVector4f term_0(0, 0, 0, 1.0f);
-
-    shadow_map = nullptr;
+    position = std::move(_positon); // left system to right system
+    shadowMap = nullptr;
 }
 
-void PointLight::shadow_mapping(Model *model)
+void PointLight::shadowMapping(Model *model)
 {
     //    delete shadow_map;
     //    shadow_map = new ShadowMap(x, y);
@@ -122,88 +84,101 @@ void PointLight::shadow_mapping(Model *model)
     //    }
 }
 
-void SunLight::set_luminance(float _luminance)
+void SunLight::setIntensity(float _intensity)
 {
-    luminance = _luminance;
+    intensity = _intensity;
 }
 
-void SunLight::set_viewport(int _x, int _y, float ccd_size_x, float ccd_size_y, float focal)
+void SunLight::setViewport(int _x, int _y, float ccdSizeX, float ccdSizeY, float focalLength)
 {
     x = _x;
     y = _y;
-    float FovH = 2 * atanf(ccd_size_x / (2 * focal));
-    float FovV = 2 * atanf(ccd_size_y / (2 * focal));
+    float FovH = 2 * atanf(ccdSizeX / (2 * focalLength));
+    float FovV = 2 * atanf(ccdSizeY / (2 * focalLength));
 
-    n = focal / 1000.0f; // mm to m
+    n = focalLength / 1000.0f; // mm to m
     f = 10000.0f; // far is_clip plane
     float r = f * tanf(FovH * 0.5f);
     float l = -r;
     float t = f * tanf(FovV * 0.5f);
     float b = -t;
 
-    M_orth << 2.0f / (r - l), 0, 0, (l + r) / (l - r), 0, 2.0f / (t - b), 0, (b + t) / (b - t), 0, 0, 1.0f / (f - n),
-            n / (n - f), 0, 0, 0, 1.0f;
+    matrixOrthographic << 2.0f / (r - l), 0, 0, (l + r) / (l - r),
+              0, 2.0f / (t - b), 0, (b + t) / (b - t),
+              0, 0, 1.0f / (f - n),
+              n / (n - f), 0, 0, 0, 1.0f;
 
-    M_view << (float)x * 0.5f, 0, 0, (float)x * 0.5f, 0, (float)y * 0.5f, 0, (float)y *
-                                                                             0.5f, 0, 0, 1.0f, 0, 0, 0, 0, 1.0f;
+    matrixViewport << (float)x * 0.5f, 0, 0, (float)x * 0.5f,
+              0, (float)y * 0.5f, 0, (float)y *0.5f,
+              0, 0, 1.0f, 0,
+              0, 0, 0, 1.0f;
 }
 
-void SunLight::set_viewport(int _x, int _y, float range_x)
+void SunLight::setViewport(int _x, int _y, float range)
 {
     x = _x;
     y = _y;
 
-    n = 0.01f; // near clip plane
+    n = 0.1f; // near clip plane
     f = 10000.0f; // far clip plane
-    float r = range_x * 0.5f;
+    float r = range * 0.5f;
     float l = -r;
-    float t = range_x * 0.5f * (float)y / (float)x;
+    float t = range * 0.5f * (float)y / (float)x;
     float b = -t;
 
-    M_orth << 2.0f / (r - l), 0, 0, (l + r) / (l - r), 0, 2.0f / (t - b), 0, (b + t) / (b - t), 0, 0, 1.0f / (f - n),
-            n / (n - f), 0, 0, 0, 1.0f;
+    matrixOrthographic << 2.0f / (r - l), 0, 0, (l + r) / (l - r),
+              0, 2.0f / (t - b), 0, (b + t) / (b - t),
+              0, 0, 1.0f / (f - n),
+              n / (n - f), 0, 0, 0, 1.0f;
 
-    M_view << (float)x * 0.5f, 0, 0, (float)x * 0.5f, 0, (float)y * 0.5f, 0, (float)y *
-                                                                             0.5f, 0, 0, 1.0f, 0, 0, 0, 0, 1.0f;
+    matrixViewport << (float)x * 0.5f, 0, 0, (float)x * 0.5f,
+              0, (float)y * 0.5f, 0, (float)y * 0.5f,
+              0, 0, 1.0f, 0,
+              0, 0, 0, 1.0f;
 }
 
-void SunLight::set_look_at(float4 light_center, float4 _focal_center, float4 _up)
+void SunLight::setLookAt(float4 _position, float4 _focal, float4 _up)
 {
-    center = std::move(light_center);
+    position = std::move(_position);
     up = std::move(_up);
-    float4 Z = (_focal_center - center).normalized();
+    float4 Z = (_focal - position).normalized();
     direct = -Z;
     float4 X = Z.cross3(up).normalized();
     float4 Y = Z.cross3(X).normalized();
     float4 temp(0, 0, 0, 0);
-    M_cam << X, Y, Z, temp;
-    M_cam.transposeInPlace();
-    float4 translation(-X.dot(center), -Y.dot(center), -Z.dot(center), 1.0f);
-    M_cam.col(3) = translation;
+    matrixView << X, Y, Z, temp;
+    matrixView.transposeInPlace();
+    float4 translation(-X.dot(position), -Y.dot(position), -Z.dot(position), 1.0f);
+    matrixView.col(3) = translation;
 
-    MO = M_view * M_orth * M_cam;
+    matrixWorldToScreen = matrixViewport * matrixOrthographic * matrixView;
 }
 
-void SunLight::shadow_mapping(Model *model)
+void SunLight::shadowMapping(Model *model)
 {
-    delete shadow_map;
-    shadow_map = new ShadowMap(x, y);
+    if (shadowMap)
+    {
+        shadowMap->reset();
+    } else
+    {
+        shadowMap = new ShadowMap(x, y);
+    }
 
     for (const auto &mesh: model->meshes)
     {
-        auto *point_2d = new float4[mesh->num_vertex];
+        auto *point_2d = new float4[mesh->numVertices];
         // Calculate depth, back projection point_2d coordinate of every vertex
-        for (int i = 0; i < mesh->num_vertex; i++)
+        for (int i = 0; i < mesh->numVertices; i++)
         {
-            point_2d[i] = MO * mesh->vertices[i].position;
+            point_2d[i] = matrixWorldToScreen * mesh->vertices[i].position;
         }
 
 #pragma omp parallel for
         for (const auto &triangle: mesh->triangles)
         {
-            float4 v_0 = point_2d[triangle.vertex_0];
-            float4 v_1 = point_2d[triangle.vertex_1];
-            float4 v_2 = point_2d[triangle.vertex_2];
+            float4 v_0 = point_2d[triangle.vertexIndex[0]];
+            float4 v_1 = point_2d[triangle.vertexIndex[1]];
+            float4 v_2 = point_2d[triangle.vertexIndex[2]];
 
             // real bounding box
             int min_x = max((int)min(v_0.x(), min(v_1.x(), v_2.x())), 0);
@@ -235,9 +210,9 @@ void SunLight::shadow_mapping(Model *model)
                         float v = CA * S;
                         float w = AB * S;
                         float depth = lerp(v_0.z(), v_1.z(), v_2.z(), u, v, w);
-                        if (depth < shadow_map->map[index + j])
+                        if (depth < shadowMap->map[index + j])
                         {
-                            shadow_map->map[index + j] = depth;
+                            shadowMap->map[index + j] = depth;
                         }
                     }
                 }

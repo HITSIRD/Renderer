@@ -11,10 +11,13 @@
 
 class Mipmap;
 
-enum SamplerType
+namespace Render
 {
-    NORMAL, BILINEAR, TRILINEAR, ANISOTROPIC
-};
+    enum SamplerType
+    {
+        NORMAL, BILINEAR, TRILINEAR, ANISOTROPIC
+    };
+}
 
 class Image
 {
@@ -39,13 +42,13 @@ public:
      *
      * @param d
      */
-    void set_data(const unsigned char *d);
+    void setData(const unsigned char *d);
 
     /**
      *
      * @return
      */
-    unsigned char *get_data() const;
+    unsigned char *getData() const;
 };
 
 class Texture2D
@@ -67,40 +70,40 @@ public:
      * @param type
      * @return
      */
-    float4 sample(const float2 &texture_uv, SamplerType type) const;
+    float4 sample(const float2 &texture_uv, Render::SamplerType type) const;
 
     /**
      *
-     * @param texture_uv
-     * @param texture_x
-     * @param texture_y
-     * @param type
+     * @param textureCoord
+     * @param ddx
+     * @param ddy
+     * @param samplerType
      * @return
      */
-    float4 sample(const float2 &texture_uv, const float2 &texture_x, const float2 &texture_y, SamplerType type) const;
+    float4 sample(const float2 &textureCoord, const float2 &ddx, const float2 &ddy, Render::SamplerType samplerType) const;
 
     /**
      * Generate mipmap of texture.
      */
-    void initialize_mipmap();
+    void initializeMipmap();
 
     /**
      *
      * @return size
      */
-    int get_size() const;
+    int getSize() const;
 
     /**
      *
      * @return channel
      */
-    int get_channel() const;
+    int getChannel() const;
 
     /**
      *
      * @return
      */
-    unsigned char *get_data() const;
+    unsigned char *getData() const;
 
 private:
     int size;
@@ -113,39 +116,39 @@ private:
      * @param y
      * @return
      */
-    float4 sample_normal(int x, int y) const;
+    float4 sampleNormal(int x, int y) const;
 
     /**
      *
      * @param texture_uv
      * @return
      */
-    float4 sample_normal(const float2 &texture_uv) const;
+    float4 sampleNormal(const float2 &texture_uv) const;
 
     /**
      *
      * @param texture_uv
      * @return
      */
-    float4 sample_bilinear(const float2 &texture_uv) const;
+    float4 sampleBilinear(const float2 &texture_uv) const;
 };
 
 class Texture3D
 {
     /**
      *
-     * @param texture_file
+     * @param textureFile
      */
-    Texture3D(const std::string &texture_file);
+    Texture3D(const std::string &textureFile);
 
 
 private:
-    Texture2D top;
-    Texture2D bottom;
-    Texture2D left;
-    Texture2D right;
-    Texture2D front;
-    Texture2D back;
+//    Texture2D top;
+//    Texture2D bottom;
+//    Texture2D left;
+//    Texture2D right;
+//    Texture2D front;
+//    Texture2D back;
 };
 
 #endif //RENDERER_TEXTURE_HPP

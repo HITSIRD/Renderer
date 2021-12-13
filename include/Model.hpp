@@ -7,39 +7,47 @@
 
 #include "Vertex.hpp"
 #include "Triangle.hpp"
+#include "BVH.hpp"
+#include <vector>
 
 class Material;
 
 class Mesh
 {
 public:
-    uint32_t num_vertex;
-    uint32_t num_triangle;
+    uint32_t numVertices;
+    uint32_t numTriangles;
 
     std::vector<Vertex> vertices;
     std::vector<Triangle> triangles;
 
     Material *material;
+    BVHNode *BVH;
 
-    Mesh():num_vertex(0), num_triangle(0), material(nullptr){}
+    Mesh():numVertices(0), numTriangles(0), material(nullptr), BVH(nullptr){}
 
     ~Mesh()
     {
 //        delete material;
-//        material = nullptr;
+        delete BVH;
     }
 
     /**
      *
      * @param vertex
      */
-    void add_vertex(Vertex &vertex);
+    void addVertex(Vertex &vertex);
 
     /**
      *
      * @param triangle
      */
-    void add_triangle(Triangle &triangle);
+    void addTriangle(Triangle &triangle);
+
+    /**
+     *
+     */
+    void createBVH();
 };
 
 class Model
@@ -53,7 +61,7 @@ public:
     {
         for (auto mesh: meshes)
         {
-            mesh->~Mesh();
+            delete mesh;
         }
     }
 
@@ -61,7 +69,7 @@ public:
      *
      * @return
      */
-    int num_model() const;
+    int numMeshes() const;
 };
 
 #endif //RENDERER_MODEL_HPP

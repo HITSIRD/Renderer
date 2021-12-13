@@ -14,16 +14,16 @@ protected:
     Shader *shader;
 
 public:
-    std::shared_ptr<Texture2D> base_texture;
-    std::shared_ptr<Texture2D> normal_texture;
-//    std::shared_ptr<Texture> base_texture;
-//    std::shared_ptr<Texture> base_texture;
+    std::shared_ptr<Texture2D> baseTexture;
+    std::shared_ptr<Texture2D> normalTexture;
+//    std::shared_ptr<Texture> glossness_texture;
+//    std::shared_ptr<Texture> metalness_texture;
 //    std::shared_ptr<Texture> base_texture;
 //    std::shared_ptr<Texture> base_texture;
     float ambient;
     float diffuse;
     float specular;
-    float spec_rank;
+    float specRank;
 
     Material();
 
@@ -33,25 +33,25 @@ public:
      *
      * @param s
      */
-    void set_shader(Shader *s);
+    void setShader(Shader *s);
 
     /**
      *
      * @param t
      */
-    void set_texture(Texture2D *t);
+    void setTexture(Texture2D *t);
 
     /**
      *
      * @param u
      */
-    Uniform get_uniform() const;
+    Uniform getUniform() const;
 
     /**
      *
-     * @return
+     * @return shader
      */
-    Shader *get_shader();
+    Shader *getShader();
 
     virtual void destroy();
 };

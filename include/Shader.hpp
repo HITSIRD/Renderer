@@ -10,6 +10,7 @@
 #include "Camera.hpp"
 #include "Texture.hpp"
 #include "State.hpp"
+#include "Ray.hpp"
 
 class Light;
 
@@ -19,19 +20,19 @@ public:
     float ka; // ambient coefficient
     float kd; // diffuse coefficient
     float ks; // specular coefficient
-    float spec_rank;
+    float specRank;
 
     Camera *camera;
-    std::vector<Light *> *light_source;
+    std::vector<Light *> *lightSource;
 
-    Texture2D *base_texture;
-    TextureType texture_type;
-    SamplerType sampler;
+    Texture2D *baseTexture;
+    Render::TextureType textureType;
+    Render::SamplerType samplerType;
 
     Uniform(){}
 
-    Uniform(float _ka, float _kd, float _ks, float _spec):ka(_ka), kd(_kd), ks(_ks), spec_rank(_spec),
-                                                          light_source(nullptr), sampler(NORMAL){}
+    Uniform(float _ka, float _kd, float _ks, float _spec):ka(_ka), kd(_kd), ks(_ks), specRank(_spec),
+                                                          lightSource(nullptr), samplerType(Render::NORMAL){}
 
     ~Uniform() = default;
 };
@@ -51,7 +52,7 @@ public:
      * Set uniform parameters.
      * @param u
      */
-    void set_uniform(Uniform *u)
+    void setUniform(Uniform *u)
     {
         uniform = u;
     }
@@ -60,16 +61,16 @@ public:
      * Set shader light source.
      * @param light
      */
-    void set_light(std::vector<Light *> *light)
+    void setLight(std::vector<Light *> *light)
     {
-        uniform->light_source = light;
+        uniform->lightSource = light;
     }
 
     /**
      * Set camera matrix.
      * @param M
      */
-    void set_camera(Camera *c)
+    void setCamera(Camera *c)
     {
         uniform->camera = c;
     }
@@ -78,18 +79,18 @@ public:
      * Set texture type.
      * @param type
      */
-    void set_texture_type(TextureType type)
+    void setTextureType(Render::TextureType type)
     {
-        uniform->texture_type = type;
+        uniform->textureType = type;
     }
 
     /**
      * Set texture sampler type.
      * @param type
      */
-    void set_sampler(SamplerType type)
+    void setSampler(Render::SamplerType type)
     {
-        uniform->sampler = type;
+        uniform->samplerType = type;
     }
 
     /**
@@ -102,10 +103,35 @@ public:
         return shader;
     };
 
-    virtual void vertex_shader(VertexP &vertex){}
+    /**
+     *
+     * @param vertex
+     */
+    virtual void vertexShader(VertexP &vertex){}
 
-    virtual void fragment_shader(Fragment &frag){}
+    /**
+     *
+     * @param frag
+     * @return color
+     */
+    virtual float4 fragmentShader(Fragment &frag)
+    {
+        return {0, 0, 0, 1.0f};
+    }
 
+    /**
+     *
+     * @param record
+     * @return color
+     */
+    virtual float4 rayShader(HitRecord &record)
+    {
+        return {0, 0, 0, 1.0f};
+    }
+
+    /**
+     *
+     */
     virtual void destroy()
     {
         uniform = nullptr;

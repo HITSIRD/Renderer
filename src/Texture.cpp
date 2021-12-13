@@ -8,6 +8,7 @@
 #include "opencv2/highgui.hpp"
 
 using namespace std;
+using namespace Render;
 
 Image::Image(int _x, int _y, int _channel)
 {
@@ -23,7 +24,7 @@ Image::~Image()
     data = nullptr;
 }
 
-void Image::set_data(const uchar *d)
+void Image::setData(const uchar *d)
 {
     if (data == nullptr)
     {
@@ -35,7 +36,7 @@ void Image::set_data(const uchar *d)
     }
 }
 
-unsigned char *Image::get_data() const
+unsigned char *Image::getData() const
 {
     return data;
 }
@@ -48,7 +49,7 @@ Texture2D::Texture2D(const string &texture_file):mipmap(nullptr)
     assert(img.rows == img.cols && ((img.rows & (img.rows - 1)) == 0)); // size must be 2^N
     size = img.cols;
     image = new Image(img.cols, img.rows, img.channels());
-    image->set_data(img.data);
+    image->setData(img.data);
 }
 
 Texture2D::~Texture2D()
@@ -57,19 +58,19 @@ Texture2D::~Texture2D()
     delete mipmap;
 }
 
-int Texture2D::get_size() const
+int Texture2D::getSize() const
 {
     return size;
 }
 
-int Texture2D::get_channel() const
+int Texture2D::getChannel() const
 {
     return image->channel;
 }
 
-unsigned char *Texture2D::get_data() const
+unsigned char *Texture2D::getData() const
 {
-    return image->get_data();
+    return image->getData();
 }
 
 float4 Texture2D::sample(const float2 &texture_uv, SamplerType type = NORMAL) const
@@ -77,26 +78,26 @@ float4 Texture2D::sample(const float2 &texture_uv, SamplerType type = NORMAL) co
     switch (type)
     {
         case NORMAL:
-            return sample_normal(texture_uv);
+            return sampleNormal(texture_uv);
         case BILINEAR:
-            return sample_bilinear(texture_uv);
+            return sampleBilinear(texture_uv);
         default:
             return {};
     }
 }
 
 float4 Texture2D::sample(
-        const float2 &texture_uv, const float2 &texture_x, const float2 &texture_y, SamplerType type) const
+        const float2 &textureCoord, const float2 &ddx, const float2 &ddy, SamplerType samplerType) const
 {
     if (mipmap)
     {
-        return mipmap->sample(texture_uv, texture_x, texture_y, type);
+        return mipmap->sample(textureCoord, ddx, ddy, samplerType);
     }
     // error
     return {};
 }
 
-void Texture2D::initialize_mipmap()
+void Texture2D::initializeMipmap()
 {
     if (!mipmap)
     {
@@ -106,7 +107,7 @@ void Texture2D::initialize_mipmap()
     }
 }
 
-float4 Texture2D::sample_normal(int x, int y) const
+float4 Texture2D::sampleNormal(int x, int y) const
 {
     x = x % size;
     y = y % size;
@@ -135,7 +136,7 @@ float4 Texture2D::sample_normal(int x, int y) const
     return {1.0f, 1.0f, 1.0f, 1.0f};
 }
 
-float4 Texture2D::sample_normal(const float2 &texture_uv) const
+float4 Texture2D::sampleNormal(const float2 &texture_uv) const
 {
     int x = (int)(texture_uv.x() * (float)size - 0.5f) % size;
     int y = (int)(texture_uv.y() * (float)size - 0.5f) % size;
@@ -164,7 +165,7 @@ float4 Texture2D::sample_normal(const float2 &texture_uv) const
     return {1.0f, 1.0f, 1.0f, 1.0f};
 }
 
-float4 Texture2D::sample_bilinear(const float2 &texture_uv) const
+float4 Texture2D::sampleBilinear(const float2 &texture_uv) const
 {
     float u_p = texture_uv.x() * (float)size - 0.5f;
     float v_p = texture_uv.y() * (float)size - 0.5f;
@@ -173,10 +174,10 @@ float4 Texture2D::sample_bilinear(const float2 &texture_uv) const
     float iu1 = iu0 + 1.0f;
     float iv1 = iv0 + 1.0f;
 
-    float4 color_0 = sample_normal((int)iu0, (int)iv1);
-    float4 color_1 = sample_normal((int)iu1, (int)iv1);
-    float4 color_2 = sample_normal((int)iu0, (int)iv0);
-    float4 color_3 = sample_normal((int)iu1, (int)iv0);
+    float4 color_0 = sampleNormal((int)iu0, (int)iv1);
+    float4 color_1 = sampleNormal((int)iu1, (int)iv1);
+    float4 color_2 = sampleNormal((int)iu0, (int)iv0);
+    float4 color_3 = sampleNormal((int)iu1, (int)iv0);
     float ratio_u = iu1 - u_p;
     float ratio_v = iv1 - v_p;
     float4 color_x0 = lerp(ratio_u, color_1, color_0);

@@ -1,20 +1,29 @@
 #include <iostream>
-#include "Renderer.hpp"
+#include "Rasterizer.hpp"
+#include "RayTracer.hpp"
 
 using namespace std;
 
 int main(int argc, char *argv[])
 {
-    if (argc > 3)
+    if (argc > 4)
     {
-        string model_file = argv[1]; // model file name
-        string config_file = argv[2]; // config file name
-        int mode = atoi(argv[3]); // config file name
+        string modelFile = argv[1]; // model file name
+        string configFile = argv[2]; // config file name
+        auto renderMode = (Render::RenderMode)atoi(argv[3]); // config file name
+        string render = argv[4];
 
-        auto *render = new Renderer();
-        render->read_data(model_file, config_file);
-        render->render(mode);
-        delete render;
-        return 0;
+        if(render == "RT")
+        {
+            auto rayTracer = RayTracer();
+            rayTracer.read_data(modelFile, configFile);
+            rayTracer.render(renderMode);
+        }else
+        {
+            auto rasterizer = Rasterizer();
+            rasterizer.readData(modelFile, configFile);
+            rasterizer.render(renderMode);
+        }
     }
+    return 0;
 }

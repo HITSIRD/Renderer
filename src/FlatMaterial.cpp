@@ -6,10 +6,10 @@
 #include "FlatShader.hpp"
 
 FlatMaterial::FlatMaterial(){
-    set_shader(FlatShader::instance());
+    setShader(FlatShader::instance());
 }
 
 void FlatMaterial::destroy()
 {
-    base_texture.reset();
+    baseTexture.reset();
 }

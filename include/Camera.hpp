@@ -9,10 +9,9 @@
 
 namespace Render
 {
-    enum
+    enum SYSTEM
     {
-        RIGHT = 0,
-        LEFT = 1
+        RIGHT = 0, LEFT = 1
     };
 }
 
@@ -24,12 +23,12 @@ public:
     int y; // pixel number in y
 
     // camera physical parameters, can be ignored
-    float ccd_x; // ccd size in x
-    float ccd_y; // ccd size in y
-    float focal; // (mm)
+    float ccdX; // ccd size in x
+    float ccdY; // ccd size in y
+    float focalLength; // (mm)
 
-    float4 camera_center; // camera coordinate in world space
-    float4 focal_center;
+    float4 position; // camera coordinate in world space
+    float4 focal;
     float4 up;
     float FovH; // field of view
     float FovV; // field of view
@@ -37,15 +36,17 @@ public:
     float n; // near is_clip plane
     float f; // far is_clip plane
 
-    float4x4 M_view; // world space to camera space matrix
-    float4x4 M_per; // perspective projection transformation matrix
-    float4x4 M_orth; // orthographic projection transformation matrix
-    float4x4 M_viewport; // normal device space to screen space matrix
+    float4x4 matrixView; // world space to camera space matrix
+    float4x4 matrixPerspective; // perspective projection transformation matrix
+    float4x4 matrixOrthographic; // orthographic projection transformation matrix
+    float4x4 matrixViewport; // normal device space to screen space matrix
     float4x4 Q; // normal vector transformation matrix
+
+    float4x4 matrixScreenToWorld; // P.inverse() * n
 
     float4x4 P;
     float4x4 O;
-    float4x4 VP;
+    float4x4 VP; // MVP matrix
 
     /**
      *
@@ -61,11 +62,11 @@ public:
      * Set camera viewport parameters.
      * @param _x window width
      * @param _y window height
-     * @param ccd_size_x ccd size in x
-     * @param ccd_size_y ccd size in y
+     * @param ccdSizeX ccd size in x
+     * @param ccdSizeY ccd size in y
      * @param _focal focal of camera
      */
-    void set_viewport(int _x, int _y, float ccd_size_x, float ccd_size_y, float _focal);
+    void setViewport(int _x, int _y, float ccdSizeX, float ccdSizeY, float _focal);
 
     /**
      * Set camera viewport parameters
@@ -73,26 +74,26 @@ public:
      * @param _y window height
      * @param Fov FovV, FovH will be automatically set in window scale
      */
-    void set_viewport(int _x, int _y, float Fov);
+    void setViewport(int _x, int _y, float Fov);
 
     /**
      * Set view space transformation matrix.
-     * @param _camera_center camera center coordination
-     * @param _focal_center focal center coordination
-     * @param up look up vector
-     * @param mode right system (0), left system (1)
+     * @param _position camera center coordination
+     * @param _focal focal center coordination
+     * @param _up look up vector
+     * @param system right system (0), left system (1)
      */
-    void set_look_at(float4 _camera_center, float4 _focal_center, float4 up, int mode = Render::RIGHT);
+    void setLookAt(float4 _position, float4 _focal, float4 _up, Render::SYSTEM system = Render::RIGHT);
 
     /**
      *
-     * @param _camera_center
+     * @param _position
      * @param h
      * @param p
      * @param b
-     * @param mode right system (0), left system (1)
+     * @param system right system (0), left system (1)
      */
-    void set_look_at(float4 _camera_center, float h, float p, float b, int mode = Render::RIGHT);
+    void setLookAt(float4 _position, float h, float p, float b, Render::SYSTEM system = Render::RIGHT);
 
     /**
      *
@@ -106,6 +107,7 @@ public:
      * Update the parameters.
      */
     void update();
+
 private:
     /**
     * Calculate rotation matrix of H, P, B.
@@ -113,12 +115,12 @@ private:
     * @param P
     * @param B
     */
-    void calculate_HPB(float3x3 &H, float3x3 &P, float3x3 &B) const;
+    void calculateHPB(float3x3 &H, float3x3 &P, float3x3 &B) const;
 
     /**
      * Calculate rotation matrix l_R3.
      */
-    float3x3 calculate_R();
+    float3x3 calculateRotateMatrix();
 };
 
 #endif

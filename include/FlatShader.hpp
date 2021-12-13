@@ -21,19 +21,36 @@ public:
     static FlatShader *instance();
 
     /**
-     * Shader. Automatically select the type.
+     * Vertex Shader. Automatically select the type.
      * @param vertex
      */
-    void vertex_shader(VertexP &vertex) override;
+    void vertexShader(VertexP &vertex) override;
 
     /**
-     * Shader. Automatically select the type.
+     * Fragment shader. Automatically select the type.
      * @param frag
+     * @return color
      */
-    void fragment_shader(Fragment &frag) override;
+    float4 fragmentShader(Fragment &frag) override;
 
+    /**
+     *
+     * @param record
+     * @return color
+     */
+    float4 rayShader(HitRecord &record) override;
+
+    /**
+     *
+     */
     void destroy() override;
 
+    /**
+     *
+     * @param light
+     * @param frag
+     * @return
+     */
     static float shadow(Light *light, const Fragment &frag);
 };
 

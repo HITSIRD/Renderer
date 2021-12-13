@@ -13,25 +13,28 @@
 
 class Shader;
 
-enum RenderScene
+namespace Render
 {
-    FLAT, PHONG, PBR
-};
+    enum RenderScene
+    {
+        FLAT, PHONG, PBR
+    };
 
-enum FaceCullMode
-{
-    NONE, FRONT, BACK
-};
+    enum FaceCullMode
+    {
+        NONE, FRONT, BACK
+    };
 
-enum ShadowMode
-{
-    SHADOW, NO_SHADOW
-};
+    enum ShadowMode
+    {
+        SHADOW, NO_SHADOW
+    };
 
-enum TextureType
-{
-    NORMAL_TEXTURE, MIPMAP
-};
+    enum TextureType
+    {
+        NORMAL_TEXTURE, MIPMAP
+    };
+}
 
 class FrameBuffer
 {
@@ -58,9 +61,18 @@ public:
 
     /**
      *
-     * @param frag
+     * @param index
+     * @param color
      */
-    void write_color(const Fragment &frag) const;
+    void writeColor(int index, const float4 &color) const;
+
+    /**
+     *
+     * @param _x
+     * @param _y
+     * @param color
+     */
+    void writeColor(int _x, int _y, const float4 &color) const;
 
     /**
      *
@@ -75,35 +87,37 @@ public:
     bool changed; // if current s is changed
 
     //    RENDER_SCENE render_scene;
-    FaceCullMode face_cull_mode;
-    SamplerType sampler;
-    TextureType texture_type;
-    ShadowMode shadow; // if draw shadow
+    Render::FaceCullMode faceCullMode;
+    Render::SamplerType sampler;
+    Render::TextureType textureType;
+    Render::ShadowMode shadow; // if draw shadow
+    size_t maxSample; // maximum sample number
 
     Camera *camera;
-    vector<Light *> light;
+    std::vector<Light *> lightSource; // light source
 
     Shader *shader;
 
-    float *stencil_buffer;
-    float *z_buffer; // depth buffer
+    //    float *stencil_buffer;
+    float *zBuffer; // depth buffer
     //    bool *test_buffer; // test
-    float4 *color_buffer; // store current pixel color
-    FrameBuffer *frame_buffer;
+    float4 *colorBuffer; // store current pixel color
+    FrameBuffer *frameBuffer;
 
-    int num_threads; // max thread number
+    int numThreads; // max thread number
 
-    State():model(new Model()), changed(true), face_cull_mode(BACK), sampler(NORMAL), texture_type(NORMAL_TEXTURE),
-            shadow(NO_SHADOW), camera(nullptr), shader(nullptr), stencil_buffer(nullptr), z_buffer(nullptr),
+    State():model(new Model()), changed(true), faceCullMode(Render::BACK), sampler(Render::NORMAL),
+            textureType(Render::NORMAL_TEXTURE), shadow(Render::NO_SHADOW), maxSample(16), camera(nullptr),
+            shader(nullptr), zBuffer(nullptr),
             //    test_buffer(nullptr),
-            color_buffer(nullptr), num_threads(0){}
+            colorBuffer(nullptr), numThreads(0){}
 
     ~State();
 
     /**
      *
      */
-    void reset_buffer() const;
+    void resetBuffer() const;
 
     /**
      *

@@ -10,27 +10,18 @@
 class Fragment
 {
 public:
-    int x, y; // index of fragment on screen
     float4 color; // R, G, B, A
-    float4 flat_normal; // flat normal vector
+    float4 flatNormal; // flat normal vector
     float4 normal; // interpolation normal vector
     float4 world; // world space
 //    float4 screen; // screen space coordinate
-    float2 texture_uv;
-    float clip_z;
-    float z;
+    float2 textureCoord; // texture coordinate
+    float clipZ;
 
-    float2 texture_x; // to get du/dx, dv/dx
-    float2 texture_y; // to get du/dy, dv/dy
+    float2 ddx; // to get du/dx, dv/dx
+    float2 ddy; // to get du/dy, dv/dy
 
     Fragment(){}
-
-    /**
-     *
-     * @param in_x
-     * @param in_y
-     */
-    Fragment(int _x, int _y):x(_x), y(_y){}
 
     ~Fragment() = default;
 };

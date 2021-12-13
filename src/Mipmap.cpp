@@ -8,35 +8,34 @@
 #include <iostream>
 
 using namespace std;
-
-#define log2 0.6931471806f
+using namespace Render;
 
 class Texture2D;
 
 Mipmap::Mipmap() = default;
 
-Mipmap::Mipmap(const std::string &texture_file)
+Mipmap::Mipmap(const std::string &textureFile)
 {
-    cv::Mat img = cv::imread(texture_file, cv::ImreadModes::IMREAD_UNCHANGED);
+    cv::Mat img = cv::imread(textureFile, cv::ImreadModes::IMREAD_UNCHANGED);
     assert(img.rows == img.cols && ((img.rows & (img.rows - 1)) == 0)); // size must be 2^N
 
-    max_level = 0;
+    maxLevel = 0;
     int size = img.rows;
-    max_size = size;
+    maxSize = size;
     int channels = img.channels();
     while (size != 1)
     {
-        max_level++;
+        maxLevel++;
         size = size >> 1;
     }
 
     // add level 0
-    auto *image_0 = new Image(max_size, max_size, img.channels());
-    image_0->set_data(img.data);
+    auto *image_0 = new Image(maxSize, maxSize, img.channels());
+    image_0->setData(img.data);
     data.push_back(image_0);
 
     size = img.rows;
-    for (int i = 0; i < max_level; i++)
+    for (int i = 0; i < maxLevel; i++)
     {
         size = size >> 1;
         auto *image = new Image(size, size, channels);
@@ -67,24 +66,24 @@ Mipmap::Mipmap(const std::string &texture_file)
 
 void Mipmap::initialize(Texture2D *texture)
 {
-    max_level = 0;
-    int size = texture->get_size();
-    max_size = size;
-    int channels = texture->get_channel();
+    maxLevel = 0;
+    int size = texture->getSize();
+    maxSize = size;
+    int channels = texture->getChannel();
 
     while (size != 1)
     {
-        max_level++;
+        maxLevel++;
         size = size >> 1;
     }
 
     // add level 0
-    auto *image_0 = new Image(max_size, max_size, channels);
-    image_0->set_data(texture->get_data());
+    auto *image_0 = new Image(maxSize, maxSize, channels);
+    image_0->setData(texture->getData());
     data.push_back(image_0);
 
-    size = max_size;
-    for (int i = 0; i < max_level; i++)
+    size = maxSize;
+    for (int i = 0; i < maxLevel; i++)
     {
         size = size >> 1;
         auto *image = new Image(size, size, channels);
@@ -122,31 +121,31 @@ Mipmap::~Mipmap()
 }
 
 float4 Mipmap::sample(
-        const float2 &texture_uv, const float2 &texture_x, const float2 &texture_y, SamplerType type) const
+        const float2 &textureCoord, const float2 &ddx, const float2 &ddy, SamplerType samplerType) const
 {
-    float ux = (texture_x - texture_uv).lpNorm<2>();
-    float uy = (texture_y - texture_uv).lpNorm<2>();
-    float level = log(fmax(ux, uy) * (float)max_size) / log2;
-    level = level > (float)max_level ? (float)max_level - 0.001f : level;
+    float ux = (ddx - textureCoord).lpNorm<2>();
+    float uy = (ddy - textureCoord).lpNorm<2>();
+    float level = log(fmax(ux, uy) * (float)maxSize) * InvLog2;
+    level = level > (float)maxLevel ? (float)maxLevel - 0.001f : level;
     int high = (int)(level) + 1;
-    int low = (int)(log(fmin(ux, uy) * (float)max_size) / log2);
-    if(level < 0)
+    int low = (int)(log(fmin(ux, uy) * (float)maxSize) * InvLog2);
+    if (level < 0)
     {
         level = 0;
         high = 0;
     }
     low = low < 0 ? 0 : low;
 
-    switch (type)
+    switch (samplerType)
     {
         case NORMAL:
-            return sample_normal(texture_uv, low);
+            return sample_normal(textureCoord, low);
         case BILINEAR:
-            return sample_bilinear(texture_uv, low);
+            return sample_bilinear(textureCoord, low);
         case TRILINEAR:
-            return sample_trilinear(texture_uv, level, low);
+            return sample_trilinear(textureCoord, level, low);
         case ANISOTROPIC:
-            return sample_anisotropic(texture_uv, level, low, high);
+            return sample_anisotropic(textureCoord, level, low, high);
         default:
             return {};
     }
@@ -155,8 +154,8 @@ float4 Mipmap::sample(
 float4 Mipmap::sample_normal(int x, int y, int level) const
 {
     level = level < 0 ? 0 : level;
-    level = level > max_level ? max_level : level;
-    int size = max_size >> level;
+    level = level > maxLevel ? maxLevel : level;
+    int size = maxSize >> level;
     x = x % size;
     y = y % size;
     x = x < 0 ? size + x : x;
@@ -166,31 +165,31 @@ float4 Mipmap::sample_normal(int x, int y, int level) const
     {
         case 1:
         {
-            return {(float)data[level]->data[index] / 255.0f, 1.0f, 1.0f, 1.0f};
+            return {(float)data[level]->data[index] / Inv255, 1.0f, 1.0f, 1.0f};
         }
         case 3:
         {
             // OpenCV color channel: GBR -> RGB
-            return {(float)data[level]->data[index + 2] / 255.0f, (float)data[level]->data[index + 1] / 255.0f,
-                    (float)data[level]->data[index] / 255.0f, 1.0f};
+            return {(float)data[level]->data[index + 2] / Inv255, (float)data[level]->data[index + 1] / Inv255,
+                    (float)data[level]->data[index] / Inv255, 1.0f};
         }
         case 4:
         {
             // OpenCV color channel: GBR -> RGB
-            return {(float)data[level]->data[index + 2] / 255.0f, (float)data[level]->data[index + 1] / 255.0f,
-                    (float)data[level]->data[index] / 255.0f, (float)data[level]->data[index + 3] / 255.0f};
+            return {(float)data[level]->data[index + 2] / Inv255, (float)data[level]->data[index + 1] / Inv255,
+                    (float)data[level]->data[index] / Inv255, (float)data[level]->data[index + 3] / Inv255};
         }
     }
     return {1.0f, 1.0f, 1.0f, 1.0f};
 }
 
-float4 Mipmap::sample_normal(const float2 &texture_uv, int level) const
+float4 Mipmap::sample_normal(const float2 &textureCoord, int level) const
 {
     level = level < 0 ? 0 : level;
-    level = level > max_level ? max_level : level;
-    int size = max_size >> level;
-    int x = (int)(texture_uv.x() * (float)size - 0.5f) % size;
-    int y = (int)(texture_uv.y() * (float)size - 0.5f) % size;
+    level = level > maxLevel ? maxLevel : level;
+    int size = maxSize >> level;
+    int x = (int)(textureCoord.x() * (float)size - 0.5f) % size;
+    int y = (int)(textureCoord.y() * (float)size - 0.5f) % size;
     x = x < 0 ? size + x : x;
     y = y < 0 ? size + y : y;
     int index = data[level]->channel * (y * size + x);
@@ -198,31 +197,31 @@ float4 Mipmap::sample_normal(const float2 &texture_uv, int level) const
     {
         case 1:
         {
-            return {(float)data[level]->data[index] / 255.0f, 1.0f, 1.0f, 1.0f};
+            return {(float)data[level]->data[index] / Inv255, 1.0f, 1.0f, 1.0f};
         }
         case 3:
         {
             // OpenCV color channel: GBR -> RGB
-            return {(float)data[level]->data[index + 2] / 255.0f, (float)data[level]->data[index + 1] / 255.0f,
-                    (float)data[level]->data[index] / 255.0f, 1.0f};
+            return {(float)data[level]->data[index + 2] / Inv255, (float)data[level]->data[index + 1] / Inv255,
+                    (float)data[level]->data[index] / Inv255, 1.0f};
         }
         case 4:
         {
             // OpenCV color channel: GBR -> RGB
-            return {(float)data[level]->data[index + 2] / 255.0f, (float)data[level]->data[index + 1] / 255.0f,
-                    (float)data[level]->data[index] / 255.0f, (float)data[level]->data[index + 3] / 255.0f};
+            return {(float)data[level]->data[index + 2] / Inv255, (float)data[level]->data[index + 1] / Inv255,
+                    (float)data[level]->data[index] / Inv255, (float)data[level]->data[index + 3] / Inv255};
         }
     }
     return {1.0f, 1.0f, 1.0f, 1.0f};
 }
 
-float4 Mipmap::sample_bilinear(const float2 &texture_uv, int level) const
+float4 Mipmap::sample_bilinear(const float2 &textureCoord, int level) const
 {
     level = level < 0 ? 0 : level;
-    level = level > max_level ? max_level : level;
-    int size = max_size >> level;
-    float u_p = texture_uv.x() * (float)size - 0.5f;
-    float v_p = texture_uv.y() * (float)size - 0.5f;
+    level = level > maxLevel ? maxLevel : level;
+    int size = maxSize >> level;
+    float u_p = textureCoord.x() * (float)size - 0.5f;
+    float v_p = textureCoord.y() * (float)size - 0.5f;
     float iu0 = floor(u_p);
     float iv0 = floor(v_p);
     float iu1 = iu0 + 1.0f;
@@ -239,22 +238,22 @@ float4 Mipmap::sample_bilinear(const float2 &texture_uv, int level) const
     return lerp(ratio_v, color_x0, color_x1);
 }
 
-float4 Mipmap::sample_trilinear(const float2 &texture_uv, float level, int low) const
+float4 Mipmap::sample_trilinear(const float2 &textureCoord, float level, int low) const
 {
-    if(level < 0.000001f)
+    if (level < 0.000001f)
     {
-        return sample_bilinear(texture_uv, low);
+        return sample_bilinear(textureCoord, low);
     }
-    float4 low_color = sample_bilinear(texture_uv, low);
-    float4 high_color = sample_bilinear(texture_uv, low + 1);
+    float4 low_color = sample_bilinear(textureCoord, low);
+    float4 high_color = sample_bilinear(textureCoord, low + 1);
     return lerp(level - (float)low, low_color, high_color);
 }
 
-float4 Mipmap::sample_anisotropic(const float2 &texture_uv, float level, int low, int high) const
+float4 Mipmap::sample_anisotropic(const float2 &textureCoord, float level, int low, int high) const
 {
-    int size = max_size >> (int)level;
-    float u_p = texture_uv.x() * (float)size - 0.5f;
-    float v_p = texture_uv.y() * (float)size - 0.5f;
+    int size = maxSize >> (int)level;
+    float u_p = textureCoord.x() * (float)size - 0.5f;
+    float v_p = textureCoord.y() * (float)size - 0.5f;
     float iu0 = floor(u_p);
     float iv0 = floor(v_p);
     float iu1 = iu0 + 1.0f;

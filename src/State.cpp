@@ -5,6 +5,9 @@
 #include "State.hpp"
 #include <iostream>
 
+using namespace std;
+using namespace Render;
+
 void FrameBuffer::reset() const
 {
     if (buffer)
@@ -33,13 +36,29 @@ FrameBuffer::~FrameBuffer()
     }
 }
 
-void FrameBuffer::write_color(const Fragment &frag) const
+void FrameBuffer::writeColor(int index, const float4 &color) const
 {
-    int r = (int)(255.0f * (frag.color.x() > 1.0f ? 1.0f : frag.color.x()));
-    int g = (int)(255.0f * (frag.color.y() > 1.0f ? 1.0f : frag.color.y()));
-    int b = (int)(255.0f * (frag.color.z() > 1.0f ? 1.0f : frag.color.z()));
+    int r = (int)(255.0f * (color.x() > 1.0f ? 1.0f : color.x()));
+    int g = (int)(255.0f * (color.y() > 1.0f ? 1.0f : color.y()));
+    int b = (int)(255.0f * (color.z() > 1.0f ? 1.0f : color.z()));
     int a = 255;
-    int index = 4 * (frag.y * x + frag.x);
+
+    index *= 4;
+    buffer[index] = r;
+    buffer[index + 1] = g;
+    buffer[index + 2] = b;
+    buffer[index + 3] = a;
+}
+
+void FrameBuffer::writeColor(int _x, int _y, const float4 &color) const
+{
+    int r = (int)(255.0f * (color.x() > 1.0f ? 1.0f : color.x()));
+    int g = (int)(255.0f * (color.y() > 1.0f ? 1.0f : color.y()));
+    int b = (int)(255.0f * (color.z() > 1.0f ? 1.0f : color.z()));
+    int a = 255;
+
+    int index = _y * x + _x;
+    index *= 4;
     buffer[index] = r;
     buffer[index + 1] = g;
     buffer[index + 2] = b;
@@ -60,29 +79,29 @@ State::~State()
     {
         delete shader;
     }
-    for (auto l: light)
+    for (auto l: lightSource)
     {
         delete l;
     }
-    if (stencil_buffer)
+//    if (stencil_buffer)
+//    {
+//        delete[] stencil_buffer;
+//    }
+    if (zBuffer)
     {
-        delete[] stencil_buffer;
+        delete[] zBuffer;
     }
-    if (z_buffer)
+    if (colorBuffer)
     {
-        delete[] z_buffer;
+        delete[] colorBuffer;
     }
-    if (color_buffer)
+    if (frameBuffer)
     {
-        delete[] color_buffer;
-    }
-    if (frame_buffer)
-    {
-        delete frame_buffer;
+        delete frameBuffer;
     }
 }
 
-void State::reset_buffer() const
+void State::resetBuffer() const
 {
     int size = camera->x * camera->y;
 //    if (stencil_buffer)
@@ -93,11 +112,11 @@ void State::reset_buffer() const
 //        }
 //    }
 
-    if (z_buffer)
+    if (zBuffer)
     {
         for (int i = 0; i < size; i++)
         {
-            z_buffer[i] = 1.0f;
+            zBuffer[i] = 1.0f;
         }
     }
 
@@ -109,12 +128,12 @@ void State::reset_buffer() const
 //        }
 //    }
 
-    frame_buffer->reset();
+    frameBuffer->reset();
 }
 
 void State::check()
 {
-    if(texture_type == NORMAL_TEXTURE)
+    if(textureType == Render::NORMAL_TEXTURE)
     {
         if(sampler == TRILINEAR || sampler == ANISOTROPIC)
         {
@@ -126,12 +145,12 @@ void State::check()
 void State::destroy() const
 {
     delete model;
-    delete camera;
-    delete stencil_buffer;
-    delete z_buffer;
-    delete color_buffer;
-    delete frame_buffer;
-    for (auto &l: light)
+    delete[] camera;
+//    delete[] stencil_buffer;
+    delete[] zBuffer;
+    delete[] colorBuffer;
+    delete[] frameBuffer;
+    for (auto &l: lightSource)
     {
         delete l;
     }

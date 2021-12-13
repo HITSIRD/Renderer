@@ -4,16 +4,36 @@
 
 #include "Model.hpp"
 
-void Mesh::add_vertex(Vertex &vertex){
+using namespace std;
+
+void Mesh::addVertex(Vertex &vertex)
+{
     vertices.push_back(vertex);
-    num_vertex++;
+    numVertices++;
 }
 
-void Mesh::add_triangle(Triangle &triangle){
+void Mesh::addTriangle(Triangle &triangle)
+{
     triangles.push_back(triangle);
-    num_triangle++;
+    numTriangles++;
 }
 
-int Model::num_model() const{
+void Mesh::createBVH()
+{
+    if (!BVH)
+    {
+        BVH = new BVHNode();
+        vector<Primitive *> primitives;
+        for (auto &tri: triangles)
+        {
+            primitives.push_back(&tri);
+        }
+
+        BVH->create(primitives, 0);
+    }
+}
+
+int Model::numMeshes() const
+{
     return meshes.size();
 }

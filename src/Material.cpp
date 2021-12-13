@@ -6,31 +6,31 @@
 
 Shader *Shader::shader;
 
-Material::Material():shader(nullptr), base_texture(nullptr), ambient(0.005f), diffuse(0.7f), specular(0.2f), spec_rank(16.0f)
+Material::Material():shader(nullptr), baseTexture(nullptr), ambient(0.005f), diffuse(0.7f), specular(0.2f), specRank(16.0f)
 {
     shader = Shader::instance();
 }
 
 Material::~Material() = default;
 
-void Material::set_shader(Shader *s)
+void Material::setShader(Shader *s)
 {
     shader = s;
 }
 
-void Material::set_texture(Texture2D *t)
+void Material::setTexture(Texture2D *t)
 {
-    base_texture = std::make_shared<Texture2D>(*t);
+    baseTexture = std::make_shared<Texture2D>(*t);
 }
 
-Uniform Material::get_uniform() const
+Uniform Material::getUniform() const
 {
-    Uniform u = Uniform(ambient, diffuse, specular, spec_rank);
-    u.base_texture = base_texture.get();
+    Uniform u = Uniform(ambient, diffuse, specular, specRank);
+    u.baseTexture = baseTexture.get();
     return u;
 }
 
-Shader *Material::get_shader()
+Shader *Material::getShader()
 {
     return shader;
 }

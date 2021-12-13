@@ -7,6 +7,9 @@
 
 #define MIN_LUM 0.003921569
 
+using namespace std;
+using namespace Render;
+
 PhongShader *PhongShader::shader = nullptr;
 
 PhongShader::~PhongShader() = default;
@@ -20,32 +23,32 @@ PhongShader *PhongShader::instance()
     return shader;
 }
 
-void PhongShader::vertex_shader(VertexP &vertex)
+void PhongShader::vertexShader(VertexP &vertex)
 {
     vertex.clip = uniform->camera->VP * vertex.position;
     vertex.z_rec = 1.0f / vertex.clip.w();
 }
 
-void PhongShader::fragment_shader(Fragment &frag)
+float4 PhongShader::fragmentShader(Fragment &frag)
 {
     float4 albedo = frag.color;
-    float4 color(0, 0, 0, 0);
-    if (uniform->base_texture)
+    float4 color(0, 0, 0, 1.0f);
+    if (uniform->baseTexture)
     {
-        if (uniform->texture_type == NORMAL_TEXTURE)
+        if (uniform->textureType == NORMAL_TEXTURE)
         {
-            albedo = uniform->base_texture->sample(frag.texture_uv, uniform->sampler);
-        } else if (uniform->texture_type == MIPMAP)
+            albedo = uniform->baseTexture->sample(frag.textureCoord, uniform->samplerType);
+        } else if (uniform->textureType == MIPMAP)
         {
-            albedo = uniform->base_texture->sample(frag.texture_uv, frag.texture_x, frag.texture_y, uniform->sampler);
+            albedo = uniform->baseTexture->sample(frag.textureCoord, frag.ddx, frag.ddy, uniform->samplerType);
         }
     }
-    float4 view = uniform->camera->camera_center - frag.world;
+    float4 view = uniform->camera->position - frag.world;
     frag.normal.normalize();
     view.normalize();
     color += uniform->ka * albedo; // ambient
 
-    for (const auto &light: *uniform->light_source)
+    for (const auto &light: *uniform->lightSource)
     {
         if (light->type == POINT)
         {
@@ -53,11 +56,11 @@ void PhongShader::fragment_shader(Fragment &frag)
             if (s > 0)
             {
                 auto *point = (PointLight *)light;
-                float4 dir_light = point->center - frag.world;
+                float4 dir_light = point->position - frag.world;
                 float distance = dir_light.dot(dir_light);
-                float lum = light->luminance / distance;
+                float lum = light->intensity / distance;
 
-                if(lum > MIN_LUM)
+                if (lum > MIN_LUM)
                 {
                     dir_light = dir_light.normalized();
 
@@ -67,7 +70,7 @@ void PhongShader::fragment_shader(Fragment &frag)
 
                     // Angle between reflected light and viewing
                     float4 bisector = (view + dir_light).normalized();
-                    float spec = lum * powf(max(frag.normal.dot(bisector), 0.0f), uniform->spec_rank);
+                    float spec = lum * powf(max(frag.normal.dot(bisector), 0.0f), uniform->specRank);
                     float4 specular(spec, spec, spec, 1.0f);
 
                     color += s * (uniform->kd * diffuse.cwiseProduct(albedo) + uniform->ks * specular);
@@ -79,13 +82,13 @@ void PhongShader::fragment_shader(Fragment &frag)
             if (s > 0)
             {
                 auto *sun = (SunLight *)light;
-                float diff = light->luminance * frag.normal.dot(sun->direct);
+                float diff = light->intensity * frag.normal.dot(sun->direct);
                 diff = max(diff, 0.0f);
                 float4 diffuse(diff, diff, diff, 1.0f);
 
                 // Angle between reflected light and viewing
                 float4 bisector = (view + sun->direct).normalized();
-                float spec = light->luminance * powf(max(frag.normal.dot(bisector), 0.0f), uniform->spec_rank);
+                float spec = light->intensity * powf(max(frag.normal.dot(bisector), 0.0f), uniform->specRank);
                 float4 specular(spec, spec, spec, 1.0f);
 
                 color += s * (uniform->kd * diffuse.cwiseProduct(albedo) + uniform->ks * specular);
@@ -93,12 +96,83 @@ void PhongShader::fragment_shader(Fragment &frag)
         }
     }
 
-    frag.color = color;
+    return color;
+}
+
+float4 PhongShader::rayShader(HitRecord &record)
+{
+    float4 albedo = record.color;
+    float4 color(0, 0, 0, 1.0f);
+    if (uniform->baseTexture)
+    {
+        if (uniform->textureType == NORMAL_TEXTURE)
+        {
+            albedo = uniform->baseTexture->sample(record.textureCoord, uniform->samplerType);
+        } else if (uniform->textureType == MIPMAP)
+        {
+//            albedo = uniform->base_texture->sample(record.texture_uv, record.texture_x, record.texture_y, uniform->sampler);
+        }
+    }
+    float4 view = uniform->camera->position - record.position;
+    view.normalize();
+    color += uniform->ka * albedo; // ambient
+    //    albedo = float4(uniform->ks, uniform->ks, uniform->ks, 1.0f);
+    //    color += uniform->ka * albedo; // ambient
+
+    int light_index = 0;
+    for (auto &light: *uniform->lightSource)
+    {
+        if (light->type == POINT)
+        {
+            if (!record.isInShadow[light_index])
+            {
+                float4 dir_light = light->position - record.position;
+                float distance = dir_light.dot(dir_light);
+                float lum = light->intensity / distance;
+
+                if (lum > MIN_LUM)
+                {
+                    dir_light = dir_light.normalized();
+
+                    float diff = lum * record.normal.dot(dir_light);
+                    diff = max(diff, 0.0f);
+                    float4 diffuse(diff, diff, diff, 1.0f);
+
+                    // Angle between reflected light and viewing
+                    float4 bisector = (view + dir_light).normalized();
+                    float spec = lum * powf(max(record.normal.dot(bisector), 0.0f), uniform->specRank);
+                    float4 specular(spec, spec, spec, 1.0f);
+
+                    color += (uniform->kd * diffuse.cwiseProduct(albedo) + uniform->ks * specular);
+                }
+            }
+        } else if (light->type == SUN)
+        {
+            if (!record.isInShadow[light_index])
+            {
+                auto sun = (SunLight *)light;
+                float diff = light->intensity * record.normal.dot(sun->direct);
+                diff = max(diff, 0.0f);
+                float4 diffuse(diff, diff, diff, 1.0f);
+
+                // Angle between reflected light and viewing
+                float4 bisector = (view + sun->direct).normalized();
+                float spec = light->intensity * powf(max(record.normal.dot(bisector), 0.0f), uniform->specRank);
+                float4 specular(spec, spec, spec, 1.0f);
+
+                color += (uniform->kd * diffuse.cwiseProduct(albedo) + uniform->ks * specular);
+            }
+        }
+
+        light_index++;
+    }
+
+    return color;
 }
 
 float PhongShader::shadow(Light *light, const Fragment &frag)
 {
-    if (!light->shadow_map)
+    if (!light->shadowMap)
     {
         return 1.0f;
     }
@@ -113,7 +187,7 @@ float PhongShader::shadow(Light *light, const Fragment &frag)
     } else if (light->type == SUN)
     {
         auto *sun = (SunLight *)light;
-        shadow_map_index = sun->MO * frag.world;
+        shadow_map_index = sun->matrixWorldToScreen * frag.world;
         bias = shadow_map_index.z() * 0.005f;
         int index_x = (int)shadow_map_index.x();
         int index_y = (int)shadow_map_index.y();
@@ -141,7 +215,7 @@ float PhongShader::shadow(Light *light, const Fragment &frag)
             {
                 float depth = shadow_map_index.z() - bias; // bias
                 //            float deviation = abs(depth - light->shadow_map->map[index_y * sun->x + index_x]);
-                float deviation = depth - sun->shadow_map->map[i * sun->x + j];
+                float deviation = depth - sun->shadowMap->map[i * sun->x + j];
                 if (deviation > 0)
                 {
                     shadow += 0.01f;

@@ -3,14 +3,18 @@
 //
 
 #include "iodata.hpp"
+#include "Util.hpp"
 #include <iostream>
 #include <fstream>
 #include "FlatMaterial.hpp"
 #include "PhongMaterial.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
 
 using namespace std;
+using namespace Render;
 
-void iodata::read_DEM(const string &file_name, Model *model)
+void iodata::readDEM(const string &file_name, Model *model)
 {
     string DEM_file;
     int x; // DEM resolution
@@ -41,8 +45,8 @@ void iodata::read_DEM(const string &file_name, Model *model)
     }
     in.close();
 
-    offset_x = (float)(x - 1) * sample / 2.0f;
-    offset_y = (float)(y - 1) * sample / 2.0f;
+    offset_x = (float)(x - 1) * sample * 0.5f;
+    offset_y = (float)(y - 1) * sample * 0.5f;
 
     auto *mesh = new Mesh();
     for (int i = 0; i < y; i++)
@@ -51,7 +55,7 @@ void iodata::read_DEM(const string &file_name, Model *model)
         {
             float4 c(float(i) * sample - offset_x, float(j) * sample - offset_y, DEM[i * x + j], 1.0f);
             Vertex v(c);
-            mesh->add_vertex(v);
+            mesh->addVertex(v);
         }
     }
 
@@ -61,13 +65,13 @@ void iodata::read_DEM(const string &file_name, Model *model)
         {
             Triangle triangle_0(mesh->vertices, i * x + j, i * x + x + j, i * x + j + 1);
             Triangle triangle_1(mesh->vertices, i * x + j + 1, i * x + x + j, i * x + x + j + 1);
-            mesh->add_triangle(triangle_0);
-            mesh->add_triangle(triangle_1);
+            mesh->addTriangle(triangle_0);
+            mesh->addTriangle(triangle_1);
         }
     }
 
-    cout << "vertex number: " << mesh->num_vertex << endl;
-    cout << "triangles number: " << mesh->num_triangle << endl;
+    cout << "vertex number: " << mesh->numVertices << endl;
+    cout << "triangles number: " << mesh->numTriangles << endl;
 
     // load material source parameters
     in.open(file_name.c_str());
@@ -85,7 +89,7 @@ void iodata::read_DEM(const string &file_name, Model *model)
         m->ambient = ka;
         m->diffuse = kd;
         m->specular = ks;
-        m->spec_rank = spec_rank;
+        m->specRank = spec_rank;
         mesh->material = m;
     } else if (type == "PHONG")
     {
@@ -93,7 +97,7 @@ void iodata::read_DEM(const string &file_name, Model *model)
         m->ambient = ka;
         m->diffuse = kd;
         m->specular = ks;
-        m->spec_rank = spec_rank;
+        m->specRank = spec_rank;
         mesh->material = m;
     } else
     {
@@ -107,17 +111,17 @@ void iodata::read_DEM(const string &file_name, Model *model)
     model->meshes.push_back(mesh);
 }
 
-State *iodata::load_config(const string &config)
+State *iodata::loadConfig(const string &config)
 {
     auto *s = new State();
     cout << config << endl;
 
     ifstream in;
-    int pixel_x, pixel_y;
-    float ccd_size_x, ccd_size_y, focal;
-    float camera_center_x, camera_center_y, camera_center_z;
-    float focal_center_x, focal_center_y, focal_center_z;
-    float up_x, up_y, up_z;
+    int pixelX, pixelY;
+    float ccdSizeX, ccdSizeY, focal;
+    float cameraCenterX, cameraPositionY, cameraPositionZ;
+    float focalX, focalY, focalZ;
+    float upX, upY, upZ;
 
     in.open(config.c_str());
     if (!in.is_open())
@@ -127,58 +131,62 @@ State *iodata::load_config(const string &config)
     }
 
     // load main camera
-    in >> pixel_x >> pixel_y >> ccd_size_x >> ccd_size_y >> focal;
-    in >> camera_center_x >> camera_center_y >> camera_center_z;
-    in >> focal_center_x >> focal_center_y >> focal_center_z;
-    in >> up_x >> up_y >> up_z;
-    cout << camera_center_x << " " << camera_center_y << " " << camera_center_z << endl;
-    cout << focal_center_x << " " << focal_center_y << " " << focal_center_z << endl;
-    cout << up_x << " " << up_y << " " << up_z << endl;
-    cout << "window size: " << pixel_x << "x" << pixel_y << endl;
+    in >> pixelX >> pixelY >> ccdSizeX >> ccdSizeY >> focal;
+    in >> cameraCenterX >> cameraPositionY >> cameraPositionZ;
+    in >> focalX >> focalY >> focalZ;
+    in >> upX >> upY >> upZ;
+    //    cout << camera_center_x << " " << camera_center_y << " " << camera_center_z << endl;
+    //    cout << focal_center_x << " " << focal_center_y << " " << focal_center_z << endl;
+    //    cout << up_x << " " << up_y << " " << up_z << endl;
+    cout << "window size: " << pixelX << "x" << pixelY << endl;
 
     auto c = new Camera();
-    float4 camera_center(camera_center_x / 100.0f, camera_center_y / 100.0f, camera_center_z / 100.0f, 1.0f);
-    float4 focal_center(focal_center_x / 100.0f, focal_center_y / 100.0f, focal_center_z / 100.0f, 1.0f);
-    float4 up(up_x, up_y, up_z, 0);
-    c->set_viewport(pixel_x, pixel_y, ccd_size_x, ccd_size_y, focal);
-    c->set_look_at(camera_center, focal_center, up);
+    float4 cameraPosition(cameraCenterX / SCALE, cameraPositionY / SCALE, cameraPositionZ / SCALE, 1.0f);
+    float4 cameraFocal(focalX / SCALE, focalY / SCALE, focalZ / SCALE, 1.0f);
+    float4 cameraUp(upX, upY, upZ, 0);
+
+    c->setViewport(pixelX, pixelY, ccdSizeX, ccdSizeY, focal);
+    c->setLookAt(cameraPosition, cameraFocal, cameraUp);
     s->camera = c;
 
     // load light source parameters
     string type;
-    int shadow_x, shadow_y;
-    float range_x, luminance;
-    float center_x, center_y, center_z;
+    size_t numSample;
+    int shadowX, shadowY;
+    float range, intensity, power;
+    float positionX, positionY, positionZ;
 
     while (in >> type)
     {
         if (type == "POINT")
         {
             cout << "light: POINT" << endl;
-            in >> shadow_x; // point light case: x == y
-            in >> luminance;
-            in >> center_x >> center_y >> center_z;
-            auto point_light = new PointLight(luminance, shadow_x, center_x, center_y, center_z);
-            s->light.push_back(point_light);
+            in >> shadowX; // point light case: x == y
+            in >> power;
+            in >> positionX >> positionY >> positionZ;
+            float4 position(positionX / SCALE, positionY / SCALE, positionZ / SCALE, 1.0f);
+            power = power / SCALE / SCALE;
+            auto point_light = new PointLight(power, shadowX, position);
+            s->lightSource.push_back(point_light);
             continue;
         } else if (type == "SUN")
         {
             cout << "light: SUN" << endl;
-            in >> shadow_x >> shadow_y >> range_x;
-            in >> luminance;
-            in >> center_x >> center_y >> center_z;
-            in >> focal_center_x >> focal_center_y >> focal_center_z;
-            in >> up_x >> up_y >> up_z;
+            in >> shadowX >> shadowY >> range;
+            in >> intensity;
+            in >> positionX >> positionY >> positionZ;
+            in >> focalX >> focalY >> focalZ;
+            in >> upX >> upY >> upZ;
 
             auto sun_light = new SunLight();
-            float4 center(center_x / 100.0f, center_y / 100.0f, center_z / 100.0f, 1.0f);
-            focal_center << focal_center_x / 100.0f, focal_center_y / 100.0f, focal_center_z / 100.0f, 1.0f;
-            up << up_x, up_y, up_z, 0;
-
-            sun_light->set_luminance(luminance);
-            sun_light->set_viewport(shadow_x, shadow_y, range_x);
-            sun_light->set_look_at(center, focal_center, up);
-            s->light.push_back(sun_light);
+            float4 position(positionX / SCALE, positionY / SCALE, positionZ / SCALE, 1.0f);
+            cameraFocal << focalX / SCALE, focalY / SCALE, focalZ / SCALE, 1.0f;
+            cameraUp << upX, upY, upZ, 0;
+            range /= SCALE;
+            sun_light->setIntensity(intensity);
+            sun_light->setViewport(shadowX, shadowY, range);
+            sun_light->setLookAt(position, cameraFocal, cameraUp);
+            s->lightSource.push_back(sun_light);
             continue;
         } else if (type == "SHADOW")
         {
@@ -188,12 +196,10 @@ State *iodata::load_config(const string &config)
             {
                 cout << "ON" << endl;
                 s->shadow = SHADOW;
-                continue;
             } else if (type == "OFF")
             {
                 cout << "OFF" << endl;
                 s->shadow = NO_SHADOW;
-                continue;
             } else
             {
                 cerr << "SHADOW TYPE ERROR: " + type << endl;
@@ -206,18 +212,15 @@ State *iodata::load_config(const string &config)
             if (type == "BACK")
             {
                 cout << "BACK" << endl;
-                s->face_cull_mode = BACK;
-                continue;
+                s->faceCullMode = BACK;
             } else if (type == "FRONT")
             {
                 cout << "FRONT" << endl;
-                s->face_cull_mode = FRONT;
-                continue;
+                s->faceCullMode = FRONT;
             } else if (type == "NONE")
             {
                 cout << "CULL_MODE NONE" << endl;
-                s->face_cull_mode = NONE;
-                continue;
+                s->faceCullMode = NONE;
             } else
             {
                 cerr << "CULL MODE TYPE ERROR: " + type << endl;
@@ -230,13 +233,11 @@ State *iodata::load_config(const string &config)
             if (type == "NORMAL")
             {
                 cout << "NORMAL" << endl;
-                s->texture_type = NORMAL_TEXTURE;
-                continue;
+                s->textureType = NORMAL_TEXTURE;
             } else if (type == "MIPMAP")
             {
                 cout << "MIPMAP" << endl;
-                s->texture_type = MIPMAP;
-                continue;
+                s->textureType = MIPMAP;
             } else
             {
                 cerr << "TEXTURE TYPE ERROR: " + type << endl;
@@ -250,27 +251,29 @@ State *iodata::load_config(const string &config)
             {
                 cout << "NORMAL" << endl;
                 s->sampler = NORMAL;
-                continue;
             } else if (type == "BILINEAR")
             {
                 cout << "BILINEAR" << endl;
                 s->sampler = BILINEAR;
-                continue;
             } else if (type == "TRILINEAR")
             {
                 cout << "TRILINEAR" << endl;
                 s->sampler = TRILINEAR;
-                continue;
             } else if (type == "ANISOTROPIC")
             {
                 cout << "ANISOTROPIC" << endl;
                 s->sampler = ANISOTROPIC;
-                continue;
             } else
             {
                 cerr << "TEXTURE SAMPLER TYPE ERROR: " + type << endl;
                 throw exception();
             }
+        } else if (type == "SAMPLE_MAX")
+        {
+            cout << "SAMPLE MAX: ";
+            in >> numSample;
+            s->maxSample = numSample;
+            cout << numSample << endl;
         } else
         {
             cerr << "TYPE ERROR: " + type << endl;
@@ -281,7 +284,7 @@ State *iodata::load_config(const string &config)
     return s;
 }
 
-void iodata::read_ply(const string &file_name, Model *model)
+void iodata::readPly(const string &file_name, Model *model)
 {
     string ply_file;
     int num_vertex, num_triangle;
@@ -398,38 +401,38 @@ void iodata::read_ply(const string &file_name, Model *model)
             case 3:
             {
                 in >> x >> y >> z;
-                world << x, y, z, 1.0f;
+                world << x / SCALE, y / SCALE, z / SCALE, 1.0f;
                 color << 1.0f, 1.0f, 1.0f, 1.0f;
                 Vertex vertex(world, color);
-                mesh->add_vertex(vertex);
+                mesh->addVertex(vertex);
                 break;
             }
             case 5:
             {
                 in >> x >> y >> z >> u >> v;
-                world << x, y, z, 1.0f;
+                world << x / SCALE, y / SCALE, z / SCALE, 1.0f;
                 color << 1.0f, 1.0f, 1.0f, 1.0f;
                 uv << u, 1 - v; // OpenCV read from left-up, to convert the coordinate center to left-down
                 Vertex vertex(world, uv);
-                mesh->add_vertex(vertex);
+                mesh->addVertex(vertex);
                 break;
             }
             case 6:
             {
                 in >> x >> y >> z >> r >> g >> b;
-                world << x, y, z, 1.0f;
-                color << (float)r / 255.0f, float(g) / 255.0f, float(b) / 255.0f, 1.0f;
+                world << x / SCALE, y / SCALE, z / SCALE, 1.0f;
+                color << (float)r * Inv255, float(g) * Inv255, float(b) * Inv255, 1.0f;
                 Vertex vertex(world, color);
-                mesh->add_vertex(vertex);
+                mesh->addVertex(vertex);
                 break;
             }
             case 7:
             {
                 in >> x >> y >> z >> r >> g >> b >> a;
-                world << x, y, z, 1.0f;
-                color << (float)r / 255.0f, float(g) / 255.0f, float(b) / 255.0f, float(a) / 255.0f;
+                world << x / SCALE, y / SCALE, z / SCALE, 1.0f;
+                color << (float)r * Inv255, float(g) * Inv255, float(b) * Inv255, float(a) * Inv255;
                 Vertex vertex(world, color);
-                mesh->add_vertex(vertex);
+                mesh->addVertex(vertex);
                 break;
             }
             default:
@@ -445,32 +448,23 @@ void iodata::read_ply(const string &file_name, Model *model)
         {
             in >> index_0 >> index_1 >> index_2;
             Triangle triangle(mesh->vertices, index_0, index_1, index_2);
-            mesh->add_triangle(triangle);
+            mesh->addTriangle(triangle);
             normal_sum[index_0] += triangle.normal;
             normal_sum[index_1] += triangle.normal;
             normal_sum[index_2] += triangle.normal;
-            //            triangle_num_index[index_0]++;
-            //            triangle_num_index[index_1]++;
-            //            triangle_num_index[index_2]++;
         } else if (num == 4)
         {
             in >> index_0 >> index_1 >> index_2 >> index_3;
             Triangle triangle_0(mesh->vertices, index_0, index_1, index_2);
             Triangle triangle_1(mesh->vertices, index_0, index_2, index_3);
-            mesh->add_triangle(triangle_0);
-            mesh->add_triangle(triangle_1);
+            mesh->addTriangle(triangle_0);
+            mesh->addTriangle(triangle_1);
             normal_sum[index_0] += triangle_0.normal;
             normal_sum[index_1] += triangle_0.normal;
             normal_sum[index_2] += triangle_0.normal;
-            //            triangle_num_index[index_0]++;
-            //            triangle_num_index[index_1]++;
-            //            triangle_num_index[index_2]++;
             normal_sum[index_0] += triangle_1.normal;
             normal_sum[index_2] += triangle_1.normal;
             normal_sum[index_3] += triangle_1.normal;
-            //            triangle_num_index[index_0]++;
-            //            triangle_num_index[index_2]++;
-            //            triangle_num_index[index_3]++;
         }
     }
     in.close();
@@ -484,8 +478,8 @@ void iodata::read_ply(const string &file_name, Model *model)
     delete[] normal_sum;
     //    delete[] triangle_num_index;
 
-    cout << "vertex number: " << mesh->num_vertex << endl;
-    cout << "triangles number: " << mesh->num_triangle << endl;
+    cout << "vertex number: " << mesh->numVertices << endl;
+    cout << "triangles number: " << mesh->numTriangles << endl;
 
     // load material source parameters
     in.open(file_name.c_str());
@@ -510,7 +504,7 @@ void iodata::read_ply(const string &file_name, Model *model)
         m->ambient = ka;
         m->diffuse = kd;
         m->specular = ks;
-        m->spec_rank = spec_rank;
+        m->specRank = spec_rank;
         mesh->material = m;
     } else if (type == "PHONG")
     {
@@ -518,7 +512,7 @@ void iodata::read_ply(const string &file_name, Model *model)
         m->ambient = ka;
         m->diffuse = kd;
         m->specular = ks;
-        m->spec_rank = spec_rank;
+        m->specRank = spec_rank;
         mesh->material = m;
     } else
     {
@@ -535,7 +529,7 @@ void iodata::read_ply(const string &file_name, Model *model)
         {
             in >> texture_file;
             auto *texture = new Texture2D(texture_file);
-            m->set_texture(texture);
+            m->setTexture(texture);
             cout << "base_texture: " << texture_file << endl;
         } else
         {
@@ -547,7 +541,7 @@ void iodata::read_ply(const string &file_name, Model *model)
     model->meshes.push_back(mesh);
 }
 
-void iodata::write_ply(Mesh *mesh, const string &file_name)
+void iodata::writePlyFile(Mesh *mesh, const string &file_name)
 {
     string outfile = "Data/" + file_name;
     cout << "Writing to " << outfile << endl;
@@ -556,7 +550,7 @@ void iodata::write_ply(Mesh *mesh, const string &file_name)
 
     out << "ply" << endl;
     out << "format ascii 1.0" << endl;
-    out << "element vertex " << mesh->num_vertex << endl;
+    out << "element vertex " << mesh->numVertices << endl;
     out << "property float x" << endl;
     out << "property float y" << endl;
     out << "property float z" << endl;
@@ -565,25 +559,26 @@ void iodata::write_ply(Mesh *mesh, const string &file_name)
     out << "property uchar blue" << endl;
     out << "property uchar alpha" << endl;
     //    out << "property ushort gray" << endl;
-    out << "element face " << mesh->num_triangle << endl;
+    out << "element face " << mesh->numTriangles << endl;
     out << "property list uchar int vertex_indices" << endl;
     out << "end_header" << endl;
 
     for (auto vertex: mesh->vertices)
     {
-        out << vertex.position.x() << " " << vertex.position.y() << " " << vertex.position.z() << " " << 255 << " " << 255 << " "
-            << 255 << " " << 255 << endl;
+        out << vertex.position.x() << " " << vertex.position.y() << " " << vertex.position.z() << " " << 255 << " "
+            << 255 << " " << 255 << " " << 255 << endl;
     }
 
     for (const auto &triangle: mesh->triangles)
     {
-        out << "3 " << triangle.vertex_0 << " " << triangle.vertex_1 << " " << triangle.vertex_2 << endl;
+        out << "3 " << triangle.vertexIndex[0] << " " << triangle.vertexIndex[1] << " " << triangle.vertexIndex[2]
+            << endl;
     }
 
     out.close();
 }
 
-void iodata::write_depth_image(const float *z_buffer, Camera *c)
+void iodata::writeDepthImage(const float *depth_buffer, Camera *c)
 {
     cout << "rendering..." << endl;
     string file = "Data/Output/depth_image.png";
@@ -592,20 +587,20 @@ void iodata::write_depth_image(const float *z_buffer, Camera *c)
     // update the lut
     for (int i = 0; i < 65536; i++)
     {
-        z_lut[i] = (uint16_t)(pow(double(i) / 65535.0, GAMMA) * 65535.0); // 16 bit gray
+        z_lut[i] = (uint16_t)(pow(double(i) * Inv65535, GAMMA) * 65535.0); // 16 bit gray
     }
 
     cv::Mat image = cv::Mat::zeros(c->y, c->x, CV_16U);
     auto *p = (uint16_t *)image.data;
     for (int i = 0; i < c->y * c->x; i++)
     {
-        *p = 65535 - z_lut[(uint16_t)(z_buffer[i] * 65535.0f)];
+        *p = 65535 - z_lut[(uint16_t)(depth_buffer[i] * 65535.0f)];
         p++;
     }
     cv::imwrite(file, image);
 }
 
-void iodata::write_depth_image(SunLight *light)
+void iodata::writeDepthImage(SunLight *light)
 {
     cout << "rendering..." << endl;
     string file = "Data/Output/depth_image.png";
@@ -614,14 +609,14 @@ void iodata::write_depth_image(SunLight *light)
     // update the lut
     for (int i = 0; i < 65536; i++)
     {
-        z_lut[i] = (uint16_t)(pow(double(i) / 65535.0, Z_GAMMA) * 65535.0); // 16 bit gray
+        z_lut[i] = (uint16_t)(pow(double(i) * Inv65535, Z_GAMMA) * 65535.0); // 16 bit gray
     }
 
     cv::Mat image = cv::Mat::zeros(light->y, light->x, CV_16U);
     auto *p = (uint16_t *)image.data;
     for (int i = 0; i < light->y * light->x; i++)
     {
-        *p = 65535 - z_lut[(uint16_t)(light->shadow_map->map[i] * 65535.0f)];
+        *p = 65535 - z_lut[(uint16_t)(light->shadowMap->map[i] * 65535.0f)];
         p++;
     }
     cv::imwrite(file, image);
@@ -636,7 +631,7 @@ void iodata::write_depth_image(SunLight *light)
 //    // update the lut
 //    for (int i = 0; i < 65536; i++)
 //    {
-//        lut[i] = (uint16_t)(pow(double(i) / 65535.0, GAMMA) * 65535.0); // 16 bit gray
+//        lut[i] = (uint16_t)(pow(double(i) * Inv65535, GAMMA) * 65535.0); // 16 bit gray
 //    }
 //
 //    cv::Mat image = cv::Mat::zeros(frame.y, frame.x, CV_16U);
@@ -649,9 +644,9 @@ void iodata::write_depth_image(SunLight *light)
 //    cv::imwrite(file, image);
 //}
 
-void iodata::write_result_image(const FrameBuffer &frame)
+void iodata::writeResultImage(FrameBuffer *frame)
 {
-    cout << "output image rendering..." << endl;
+    cout << "writing image..." << endl;
     string file = "Data/Output/image.png";
 
     unsigned char lut[256]; // look up table
@@ -661,32 +656,27 @@ void iodata::write_result_image(const FrameBuffer &frame)
         lut[i] = (uint8_t)(pow(double(i) / 255.0, GAMMA) * 255.0); // 8 bit
     }
 
-    cv::Mat image = cv::Mat::zeros(frame.y, frame.x, CV_8UC4);
-    auto *p = (uint8_t *)image.data;
-    int size = 4 * frame.x * frame.y;
+    cv::Mat image = cv::Mat::zeros(frame->y, frame->x, CV_8UC4);
+    auto *p = image.data;
+    int size = 4 * frame->x * frame->y;
     for (int i = 0; i < size; i += 4)
     {
-        //        *p = lut[frame.buffer[i + 2]]; // B
-        //        p++;
-        //        *p = lut[frame.buffer[i + 1]]; // G
-        //        p++;
-        //        *p = lut[frame.buffer[i]]; // R
-        //        p++;
-        //        *p = frame.buffer[i + 3]; // Alpha channel
-        //        p++;
-        *p = frame.buffer[i + 2]; // B
+        *p = frame->buffer[i + 2]; // B
         p++;
-        *p = frame.buffer[i + 1]; // G
+        *p = frame->buffer[i + 1]; // G
         p++;
-        *p = frame.buffer[i]; // R
+        *p = frame->buffer[i]; // R
         p++;
-        *p = frame.buffer[i + 3]; // Alpha channel
+        *p = frame->buffer[i + 3]; // Alpha channel
         p++;
     }
+
+    //    cv::pyrDown(image, image, cv::Size(image.rows / 2, image.cols / 2));
+    //    cv::pyrDown(image, image, cv::Size(image.rows / 2, image.cols / 2));
     cv::imwrite(file, image);
 }
 
-void iodata::write_result_image(const string &file_name, const FrameBuffer &frame)
+void iodata::writeResultImage(const string &file_name, FrameBuffer *frame)
 {
     cout << "writing " << file_name << endl;
     //    unsigned char lut[256]; // look up table
@@ -696,27 +686,21 @@ void iodata::write_result_image(const string &file_name, const FrameBuffer &fram
     //        lut[i] = (uint8_t)(pow(double(i) / 255.0, GAMMA) * 255.0); // 8 bit
     //    }
 
-    cv::Mat image = cv::Mat::zeros(frame.y, frame.x, CV_8UC4);
-    auto *p = (uint8_t *)image.data;
-    int size = 4 * frame.x * frame.y;
+    cv::Mat image = cv::Mat::zeros(frame->y, frame->x, CV_8UC4);
+    auto *p = image.data;
+    int size = 4 * frame->x * frame->y;
     for (int i = 0; i < size; i += 4)
     {
-        //        *p = lut[frame.buffer[i + 2]]; // B
-        //        p++;
-        //        *p = lut[frame.buffer[i + 1]]; // G
-        //        p++;
-        //        *p = lut[frame.buffer[i]]; // R
-        //        p++;
-        //        *p = frame.buffer[i + 3]; // Alpha channel
-        //        p++;
-        *p = frame.buffer[i + 2]; // B
+        *p = frame->buffer[i + 2]; // B
         p++;
-        *p = frame.buffer[i + 1]; // G
+        *p = frame->buffer[i + 1]; // G
         p++;
-        *p = frame.buffer[i]; // R
+        *p = frame->buffer[i]; // R
         p++;
-        *p = frame.buffer[i + 3]; // Alpha channel
+        *p = frame->buffer[i + 3]; // Alpha channel
         p++;
     }
+    cv::pyrDown(image, image, cv::Size(image.rows / 2, image.cols / 2));
+    cv::pyrDown(image, image, cv::Size(image.rows / 2, image.cols / 2));
     cv::imwrite(file_name, image);
 }
