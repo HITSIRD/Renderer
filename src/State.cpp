@@ -6,64 +6,14 @@
 #include <iostream>
 
 using namespace std;
-using namespace Render;
+using namespace Renderer;
 
-void FrameBuffer::reset() const
-{
-    if (buffer)
-    {
-        int size = 4 * x * y;
-        for (int i = 0; i < size; i += 4)
-        {
-            buffer[i] = 0;
-            buffer[i + 1] = 0;
-            buffer[i + 2] = 0;
-            buffer[i + 3] = 255;
-        }
-    }
-}
-
-FrameBuffer::FrameBuffer(int _x, int _y):x(_x), y(_y)
-{
-    buffer = new unsigned char[4 * x * y];
-}
-
-FrameBuffer::~FrameBuffer()
-{
-    if (buffer)
-    {
-        delete[] buffer;
-    }
-}
-
-void FrameBuffer::writeColor(int index, const float4 &color) const
-{
-    int r = (int)(255.0f * (color.x() > 1.0f ? 1.0f : color.x()));
-    int g = (int)(255.0f * (color.y() > 1.0f ? 1.0f : color.y()));
-    int b = (int)(255.0f * (color.z() > 1.0f ? 1.0f : color.z()));
-    int a = 255;
-
-    index *= 4;
-    buffer[index] = r;
-    buffer[index + 1] = g;
-    buffer[index + 2] = b;
-    buffer[index + 3] = a;
-}
-
-void FrameBuffer::writeColor(int _x, int _y, const float4 &color) const
-{
-    int r = (int)(255.0f * (color.x() > 1.0f ? 1.0f : color.x()));
-    int g = (int)(255.0f * (color.y() > 1.0f ? 1.0f : color.y()));
-    int b = (int)(255.0f * (color.z() > 1.0f ? 1.0f : color.z()));
-    int a = 255;
-
-    int index = _y * x + _x;
-    index *= 4;
-    buffer[index] = r;
-    buffer[index + 1] = g;
-    buffer[index + 2] = b;
-    buffer[index + 3] = a;
-}
+State::State(): screenSize({0, 0}), model(new Model()), changed(true), projection(Renderer::PERS),
+        faceCullMode(Renderer::BACK), sampler(Renderer::NORMAL), mipmap(false), shadow(Renderer::SHADOW), depthTest(true),
+        maxSample(16), camera(nullptr), shader(nullptr),
+        //    test_buffer(nullptr),
+        zBuffer(nullptr), numThreads(0)
+{}
 
 State::~State()
 {
@@ -75,10 +25,6 @@ State::~State()
     {
         delete camera;
     }
-    if (shader)
-    {
-        delete shader;
-    }
     for (auto l: lightSource)
     {
         delete l;
@@ -89,53 +35,23 @@ State::~State()
 //    }
     if (zBuffer)
     {
-        delete[] zBuffer;
-    }
-    if (colorBuffer)
-    {
-        delete[] colorBuffer;
-    }
-    if (frameBuffer)
-    {
-        delete frameBuffer;
+        delete zBuffer;
     }
 }
 
 void State::resetBuffer() const
 {
-    int size = camera->x * camera->y;
-//    if (stencil_buffer)
-//    {
-//        for (int i = 0; i < size; i++)
-//        {
-//            stencil_buffer[i] = 0;
-//        }
-//    }
-
     if (zBuffer)
     {
-        for (int i = 0; i < size; i++)
-        {
-            zBuffer[i] = 1.0f;
-        }
+        zBuffer->reset(1.f);
     }
-
-//    if (color_buffer)
-//    {
-//        for (int i = 0; i < size; i++)
-//        {
-//            color_buffer[i] << 0, 0, 0, 1.0f;
-//        }
-//    }
-
-    frameBuffer->reset();
 }
 
 void State::check()
 {
-    if(textureType == Render::NORMAL_TEXTURE)
+    if (!mipmap)
     {
-        if(sampler == TRILINEAR || sampler == ANISOTROPIC)
+        if (sampler == TRILINEAR || sampler == ANISOTROPIC)
         {
             std::cerr << "ERROR SAMPLER TYPE" << endl;
         }
@@ -148,8 +64,6 @@ void State::destroy() const
     delete[] camera;
 //    delete[] stencil_buffer;
     delete[] zBuffer;
-    delete[] colorBuffer;
-    delete[] frameBuffer;
     for (auto &l: lightSource)
     {
         delete l;

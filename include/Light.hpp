@@ -7,83 +7,43 @@
 
 #include "Type.hpp"
 #include "Model.hpp"
+#include "Texture.hpp"
 
-enum LIGHT_TYPE
+class ShadowShader;
+
+namespace Renderer
 {
-    BASE, POINT, SUN
-};
-
-class ShadowMap
-{
-public:
-    int x;
-    int y;
-    float *map;
-
-    /**
-     *
-     * @param _x
-     * @param _y
-     */
-    ShadowMap(int _x, int _y):x(_x), y(_y)
+    enum LIGHT_TYPE
     {
-        map = new float[x * y];
-        for (int i = 0; i < x * y; i++)
-        {
-            map[i] = 1.0f;
-        }
-    }
-
-    void reset() const
-    {
-        if(map)
-        {
-            for (int i = 0; i < x * y; i++)
-            {
-                map[i] = 1.0f;
-            }
-        }
-    }
-
-    ~ShadowMap()
-    {
-        if(map)
-        {
-            delete[] map;
-        }
-    }
-};
+        POINT, SUN
+    };
+}
 
 class Light
 {
 public:
-    LIGHT_TYPE type;
+    Renderer::LIGHT_TYPE type;
+    int shadowSize; // resolution size \times size
     float intensity;
-
+    float4 color;
     float4 position; // light coordinate in world space
 
-    ShadowMap *shadowMap;
+    ShadowShader *shader;
+    bool updateShadow; // if update shadow map
 
-    Light():type(SUN), intensity(1.0f), position(0, 0, 0, 1.0f), shadowMap(nullptr){}
+    Light();
 
     ~Light();
-
-    /**
-     *
-     * @param model
-     */
-    virtual void shadowMapping(Model *model);
 };
 
-class PointLight:public Light
+class PointLight: public Light
 {
 public:
-    int shadowSize; // shadow map size
-    //
-    //    float n; // near is_clip plane
-    //    float f; // far is_clip plane
-    //
-    //    mat4 P;
+    float4x4 matrixWorldToScreen[6];
+    float4x4 VP[6]; // MVP matrix
+    float4x4 matrixViewport;
+
+    TextureCube<float> *shadowMap;
 
     /**
      *
@@ -93,16 +53,26 @@ public:
      */
     PointLight(float power, int _shadowSize, float4 _position);
 
-    void shadowMapping(Model *model) override;
+    /**
+     *
+     * @param power
+     * @param _shadowSize
+     * @param position
+     */
+    void setup(float power, int _shadowSize, float4 _position);
+
+    /**
+     * Set shadow map.
+     * @param faceIndex
+     * @param buffer
+     */
+    void setShadowMap(int faceIndex, Image<float> *buffer);
 };
 
-class SunLight:public Light
+class SunLight: public Light
 {
 public:
-    int x; // pixel number in x
-    int y; // pixel number in y
     float4 up;
-
     float4 direct; // direct light
 
     float n; // near is_clip plane
@@ -111,16 +81,11 @@ public:
     float4x4 matrixView; // world space to camera space matrix
     float4x4 matrixOrthographic; // orthographic projection transformation matrix
     float4x4 matrixViewport; // normal device space to screen space matrix
-
     float4x4 matrixWorldToScreen;
 
-    //    SunLight(vec4 direct_light):direct(direct_light){}
+    Texture2D<float> *shadowMap;
 
-    SunLight()
-    {
-        type = SUN;
-        shadowMap = nullptr;
-    }
+    SunLight();
 
     /**
      *
@@ -129,22 +94,11 @@ public:
     void setIntensity(float _intensity);
 
     /**
-     * Set camera viewport parameters.
-     * @param _x window width
-     * @param _y window height
-     * @param ccdSizeX ccd size in x
-     * @param ccdSizeY ccd size in y
-     * @param focalLength focal of camera
-     */
-    void setViewport(int _x, int _y, float ccdSizeX, float ccdSizeY, float focalLength);
-
-    /**
-     * Set camera viewport parameters
-     * @param _x window width
-     * @param _y window height
+     * Set light viewport parameters
+     * @param _size resolution, should be 2^N, if not, convert explicitly
      * @param range orthographic projection range
      */
-    void setViewport(int _x, int _y, float range);
+    void setViewport(int _size, float range);
 
     /**
      * Set view space transformation matrix.
@@ -155,10 +109,10 @@ public:
     void setLookAt(float4 _position, float4 _focal, float4 _up);
 
     /**
-     *
-     * @param model
+     * Set shadow map.
+     * @param buffer
      */
-    void shadowMapping(Model *model) override;
+    void setShadowMap(Image<float> *buffer);
 };
 
 #endif //RENDERER_LIGHT_HPP

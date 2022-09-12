@@ -7,13 +7,13 @@
 
 #include "Type.hpp"
 #include "State.hpp"
+#include "FrameBuffer.hpp"
 
-namespace Render
+namespace Renderer
 {
-    enum RenderMode{
-        DO_LOOP = 0,
-        OUTPUT_SINGLE = 1,
-        ANIMATION = 2
+    enum Pass
+    {
+        SHADOW_PASS, SCENE_PASS
     };
 }
 
@@ -21,11 +21,14 @@ class Rasterizer
 {
 public:
     State *s;
+    FrameBuffer *frameBuffer;
     bool stop; // if loop should stop rendering
 
-    Rasterizer():stop(false), s(nullptr){}
+    Rasterizer(): stop(false), s(nullptr), frameBuffer(nullptr)
+    {}
 
-    Rasterizer(bool _stop):stop(_stop), s(nullptr){}
+    Rasterizer(bool _stop): stop(_stop), s(nullptr)
+    {}
 
     ~Rasterizer()
     {
@@ -34,16 +37,23 @@ public:
 
     /**
      *
-     * @param modelFile
-     * @param configFile
+     * @param modelConfig
+     * @param renderingConfig
      */
-    void readData(const std::string &modelFile, const std::string &configFile);
+    void loadConfig(const std::string &modelConfig, const std::string &renderingConfig);
 
     /**
      *
+     * @param renderMode
      */
-    void render(Render::RenderMode renderMode);
+    void render(Renderer::RenderMode renderMode);
+
 private:
+    /**
+     *
+     */
+    void renderSingle();
+
     /**
      *
      */
@@ -51,6 +61,11 @@ private:
 
     /**
      *
+     */
+    void renderAnimation();
+
+    /**
+     * Initialize buffers and shadow maps.
      */
     void initialize() const;
 
@@ -70,21 +85,27 @@ private:
      * @param v2
      * @return
      */
-    static std::vector<VertexP> clip_near(const VertexP &v0, const VertexP &v1, const VertexP &v2);
+    static std::vector<VertexP> clipNear(const VertexP &v0, const VertexP &v1, const VertexP &v2);
 
     /**
      *
      */
-    void draw();
+    void drawShadow();
+
+    /**
+     *
+     * @param uniform
+     * @param pass
+     */
+    void drawScene(Uniform &uniform, Renderer::Pass pass);
 
     /**
      *
      * @param v0
      * @param v1
      * @param v2
-     * @param flatNormal
      */
-    void draw_triangle(const VertexP &v0, const VertexP &v1, const VertexP &v2, const float4 &flatNormal);
+    void drawTriangle(const VertexP &v0, const VertexP &v1, const VertexP &v2);
 
     /**
      *
@@ -98,12 +119,12 @@ private:
 
     /**
      * Write fragment color to buffer and test depth.
-     * @param _x
-     * @param _y
+     * @param _x screen coordinate
+     * @param _y screen coordinate
      * @param z fragment z value
      * @param color
      */
-    void write_color(int _x, int _y, float z, const float4 &color) const;
+    void writeColor(int _x, int _y, float z, const float4 &color) const;
 
     /**
      *

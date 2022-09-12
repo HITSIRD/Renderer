@@ -5,11 +5,17 @@
 #include "FlatMaterial.hpp"
 #include "FlatShader.hpp"
 
-FlatMaterial::FlatMaterial(){
+FlatMaterial::FlatMaterial()
+{
     setShader(FlatShader::instance());
 }
 
 void FlatMaterial::destroy()
 {
-    baseTexture.reset();
+    textureBase.reset();
+    textureNormal.reset();
+    textureAO.reset();
+    textureMetalness.reset();
+    textureRoughness.reset();
+    textureEmission.reset();
 }

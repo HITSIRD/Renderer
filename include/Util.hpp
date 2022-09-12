@@ -9,22 +9,27 @@
 #include "Vertex.hpp"
 #include "random"
 
-namespace Render
+namespace Renderer
 {
     /**
      * utility constants
      */
-    static const float Pi       = 3.1415926535897932f;
-    static const float InvPi    = 0.3183098861837907f; // 1 / Pi
-    static const float Inv2Pi   = 0.6366197723675813f; // 2 / Pi
-    static const float Inv4Pi   = 1.2732395447351627f; // 4 / Pi
-    static const float PiOver2  = 1.5707963267948966f; // Pi / 2
-    static const float PiOver4  = 0.7853981633974483f; // Pi / 4
-    static const float Sqrt2    = 1.4142135623730950f; // Pi / 4
-    static const float Log2     = 0.6931471805599453f; // log(2)
-    static const float InvLog2  = 1.4426950408889634f; // 1 / log(2)
-    static const float Inv255   = 0.0039215686274510f; // 1 / 255.0
+    static const float Pi = 3.1415926535897932f;
+    static const float Pi2 = 6.2831853071795865f; // 2 * Pi
+    static const float InvPi = 0.3183098861837907f; // 1 / Pi
+    static const float Inv2Pi = 0.6366197723675813f; // 2 / Pi
+    static const float Inv4Pi = 1.2732395447351627f; // 4 / Pi
+    static const float PiOver2 = 1.5707963267948966f; // Pi / 2
+    static const float PiOver4 = 0.7853981633974483f; // Pi / 4
+    static const float Sqrt2 = 1.4142135623730950f; // Pi / 4
+    static const float Log2 = 0.6931471805599453f; // log(2)
+    static const float InvLog2 = 1.4426950408889634f; // 1 / log(2)
+    static const float Inv255 = 0.0039215686274510f; // 1 / 255.0
     static const float Inv65535 = 0.0000152590218967f; // 1 / 65535.0
+
+    static const float4 ZeroFloat4(0, 0, 0, 0);
+    static const float4
+            RandomFloat4(0.5305025836169190f, 0.4564595701410036f, -0.7142910258448331f, 0); // random float4 vector
 
     /**
      *
@@ -45,6 +50,19 @@ namespace Render
     {
         return rad * 180.0f / Pi;
     }
+
+    /**
+    * Calculate rotation matrix of H, P, B.
+    * @param H
+    * @param P
+    * @param B
+    */
+    void calculateHPB(float3x3 &H, float3x3 &P, float3x3 &B);
+
+    /**
+     * Calculate rotation matrix l_R3.
+     */
+    float3x3 calculateRotateMatrix();
 
     /**
      *
@@ -77,40 +95,42 @@ namespace Render
 
     /**
      *
-     * @param v_0
-     * @param v_1
-     * @param v_2
+     * @param v0
+     * @param v1
+     * @param v2
      * @param u
      * @param v
      * @param w
      * @return
      */
-    inline Fragment lerp(const VertexP &v_0, const VertexP &v_1, const VertexP &v_2, float u, float v, float w)
+    inline Fragment lerp(const VertexP &v0, const VertexP &v1, const VertexP &v2, float u, float v, float w)
     {
         Fragment frag;
-        frag.world = lerp(v_0.position, v_1.position, v_2.position, u, v, w);
-        frag.normal = lerp(v_0.normal, v_1.normal, v_2.normal, u, v, w);
-        frag.color = lerp(v_0.color, v_1.color, v_2.color, u, v, w);
-        frag.textureCoord = lerp(v_0.texture_uv, v_1.texture_uv, v_2.texture_uv, u, v, w);
-        frag.clipZ = 1.0f / lerp(v_0.z_rec, v_1.z_rec, v_2.z_rec, u, v, w);
+        frag.world = lerp(v0.position, v1.position, v2.position, u, v, w);
+        frag.normal = lerp(v0.normal, v1.normal, v2.normal, u, v, w);
+        frag.color = lerp(v0.color, v1.color, v2.color, u, v, w);
+        frag.textureCoord = lerp(v0.textureCoord, v1.textureCoord, v2.textureCoord, u, v, w);
+        frag.tangent = lerp(v0.tangent, v1.tangent, v2.tangent, u, v, w);
+        frag.clipZ = 1.0f / lerp(v0.zRec, v1.zRec, v2.zRec, u, v, w);
         return frag;
     }
 
     /**
      *
      * @param x
-     * @param v_0
-     * @param v_1
+     * @param v0
+     * @param v1
      * @return
      */
-    inline VertexP lerp(float x, const VertexP &v_0, const VertexP &v_1)
+    inline VertexP lerp(float x, const VertexP &v0, const VertexP &v1)
     {
         VertexP v;
-        v.position = lerp(x, v_0.position, v_1.position);
-        v.clip = lerp(x, v_0.clip, v_1.clip);
-        v.color = lerp(x, v_0.color, v_1.color);
-        v.texture_uv = lerp(x, v_0.texture_uv, v_1.texture_uv);
-        v.z_rec = 1.0f / v.clip.w();
+        v.position = lerp(x, v0.position, v1.position);
+        v.screen = lerp(x, v0.screen, v1.screen);
+        v.color = lerp(x, v0.color, v1.color);
+        v.tangent = lerp(x, v0.tangent, v1.tangent);
+        v.textureCoord = lerp(x, v0.textureCoord, v1.textureCoord);
+        v.zRec = 1.0f / v.screen.w();
         return v;
     }
 
@@ -157,10 +177,10 @@ namespace Render
      */
     inline void perspectiveDivision(VertexP &vertex)
     {
-        vertex.position *= vertex.z_rec;
-        vertex.normal *= vertex.z_rec;
-        vertex.color *= vertex.z_rec;
-        vertex.texture_uv *= vertex.z_rec;
+        vertex.position *= vertex.zRec;
+        vertex.normal *= vertex.zRec;
+        vertex.color *= vertex.zRec;
+        vertex.textureCoord *= vertex.zRec;
     }
 
     /**
@@ -183,11 +203,34 @@ namespace Render
      */
     inline void perspectiveRestore(VertexP &vertex)
     {
-        float z = 1.0f / vertex.z_rec;
+        float z = 1.0f / vertex.zRec;
         vertex.position *= z;
         vertex.normal *= z;
         vertex.color *= z;
-        vertex.texture_uv *= z;
+        vertex.textureCoord *= z;
+    }
+
+    /**
+     *
+     * @param v0
+     * @param v1
+     * @param v2
+     * @return tangent of vertices in a triangle
+     */
+    inline float4 calculateTangent(const Vertex &v0, const Vertex &v1, const Vertex &v2)
+    {
+        float4 e1 = v1.position - v0.position;
+        float4 e2 = v2.position - v0.position;
+        float2 dUV1 = v1.textureCoord - v0.textureCoord;
+        float2 dUV2 = v2.textureCoord - v0.textureCoord;
+        float determinant = dUV1.x() * dUV2.y() - dUV2.x() * dUV1.y();
+        if (determinant == 0) // singular matrix
+        {
+            return RandomFloat4;
+        }
+        float invDet = 1.f / (dUV1.x() * dUV2.y() - dUV2.x() * dUV1.y());
+        return {invDet * (dUV2.y() * e1.x() - dUV1.y() * e2.x()), invDet * (dUV2.y() * e1.y() - dUV1.y() * e2.y()),
+                invDet * (dUV2.y() * e1.z() - dUV1.y() * e2.z()), 0};
     }
 
     /**
@@ -242,7 +285,7 @@ namespace Render
     {
         std::default_random_engine e;
         std::random_device rd;
-        std::uniform_real_distribution<> uniform(-1.0f, 1.0f);
+        std::uniform_real_distribution<> uniform(0, 1.0f);
         e.seed(rd());
         float *buffer = new float[size];
         for (int i = 0; i < size; i++)

@@ -6,61 +6,61 @@
 #define RENDERER_IODATA_HPP
 
 #include "State.hpp"
+#include "FrameBuffer.hpp"
 
 #define GAMMA 1/2.2
 #define Z_GAMMA 1/2.2
-#define SCALE 1.0f
 
 class iodata
 {
 public:
     /**
-     *
-     * @param file_name
+     * Read model file configuration data.
+     * @param configPath model configuration file path
+     * @param configPath
+     * @return model
      */
-    static void readModel(const std::string &file_name);
+    static Model *modelConfigParser(const std::string &configPath);
 
     /**
-     * Read ply file data.
-     * @param file_name ply file name
-     * @return mesh
+     * Load material configuration file.
+     * @param configPath
+     * @return material
      */
-    static void readPly(const std::string &file_name, Model *model);
-
-    /**
-     * Read DEM data, the vertex number must be over or equal 2x2.
-     * @param file_name DEM file name
-     * @param model
-     * @return mesh
-     */
-    static void readDEM(const std::string &file_name, Model *model);
+    static Material *materialConfigParser(const std::string &configPath);
 
     /**
      * Load config file and initialize the state.
-     * @param config
+     * @param configPath
      * @return
      */
-    static State *loadConfig(const std::string &config);
+    static void renderingConfigParser(const std::string &configPath, State *s);
+
+    /**
+     * Read DEM data, the vertex number must be over or equal 2x2.
+     * @param fileName DEM file name
+     * @return mesh
+     */
+    static Mesh *readDEM(const std::string &fileName);
+
+    /**
+     *
+     * @param plyFilePath
+     */
+    static Mesh *readPlyFile(const std::string &plyFilePath);
 
     /**
      *
      * @param mesh
-     * @param file_name
+     * @param fileName
      */
-    static void writePlyFile(Mesh *mesh, const std::string &file_name);
+    static void writePlyFile(Mesh *mesh, const std::string &fileName);
 
     /**
      * Write result depth image. The gray level manifests the depth, 0(black) means farthest and 255(white) means nearest.
-     * @param depth_buffer
-     * @param c
+     * @param shadowMap
      */
-    static void writeDepthImage(const float *depth_buffer, Camera *c);
-
-    /**
-     * Write result depth image. The gray level manifests the depth, 0(black) means farthest and 255(white) means nearest.
-     * @param light
-     */
-    static void writeDepthImage(SunLight *light);
+    static void writeDepthImage(Image<float> *shadowMap);
 
     /**
      *
@@ -70,10 +70,10 @@ public:
 
     /**
      *
-     * @param file_name
+     * @param fileName
      * @param frame
      */
-    static void writeResultImage(const std::string& file_name, FrameBuffer *frame);
+    static void writeResultImage(const std::string &fileName, FrameBuffer *frame);
 };
 
 #endif

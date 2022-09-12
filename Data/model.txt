@@ -1,4 +1,0 @@
-Data/Assets/box_2.ply
-FLAT
-0 1.0 0.8
-32

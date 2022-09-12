@@ -7,16 +7,17 @@
 
 #include "Shader.hpp"
 
-class FlatShader:public Shader
+class FlatShader: public Shader
 {
     static FlatShader *shader;
 
     FlatShader() = default;
+
 public:
     ~FlatShader() override;
 
     /**
-     * Get a instance and reset.
+     * Get a getInstance and reset.
      */
     static FlatShader *instance();
 

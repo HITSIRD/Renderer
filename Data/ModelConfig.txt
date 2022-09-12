@@ -1,0 +1,2 @@
+MODEL Data/Assets/box.ply
+MATERIAL Data/materialBox.txt

@@ -7,11 +7,22 @@
 
 #include "Type.hpp"
 
-namespace Render
+namespace Renderer
 {
-    enum SYSTEM
+    enum System
     {
-        RIGHT = 0, LEFT = 1
+        RIGHT = 0,
+        LEFT = 1
+    };
+
+    enum EulerAngleOrder
+    {
+        ZYX,
+        ZXY,
+        YXZ,
+        YZX,
+        XYZ,
+        XZY
     };
 }
 
@@ -40,18 +51,20 @@ public:
     float4x4 matrixPerspective; // perspective projection transformation matrix
     float4x4 matrixOrthographic; // orthographic projection transformation matrix
     float4x4 matrixViewport; // normal device space to screen space matrix
-    float4x4 Q; // normal vector transformation matrix
+    float4x4 matrixNormal; // normal vector transformation matrix
 
-    float4x4 matrixScreenToWorld; // P.inverse() * n
+    // ray tracing
+    float4x4 matrixScreenToView; // (matrixPerspective * matrixViewport).inverse()
+    float4x4 matrixViewToWorld; // matrixView.inverse()
 
-    float4x4 P;
-    float4x4 O;
-    float4x4 VP; // MVP matrix
+    float4x4 matrixWorldToScreen; // world to screen perspective transformation
+    float4x4 matrixVP; // MVP matrix
 
     /**
      *
      */
-    Camera(){}
+    Camera()
+    {}
 
     /**
      * destructor
@@ -83,7 +96,7 @@ public:
      * @param _up look up vector
      * @param system right system (0), left system (1)
      */
-    void setLookAt(float4 _position, float4 _focal, float4 _up, Render::SYSTEM system = Render::RIGHT);
+    void setLookAt(float4 _position, float4 _focal, float4 _up, Renderer::System system = Renderer::RIGHT);
 
     /**
      *
@@ -91,36 +104,22 @@ public:
      * @param h
      * @param p
      * @param b
-     * @param system right system (0), left system (1)
+     * @param order
+     * @param system right hand system or left hand system
      */
-    void setLookAt(float4 _position, float h, float p, float b, Render::SYSTEM system = Render::RIGHT);
+    void setLookAt(
+            float4 _position, float yaw, float pitch, float roll, Renderer::EulerAngleOrder order = Renderer::ZYX,
+            Renderer::System system = Renderer::RIGHT);
 
     /**
      *
-     * @param direction
-     * @param angle
+     * @param _position
+     * @param quaternion
+     * @param system
      */
-    void rotate(float4 direction, float angle);
-
-    /**
-     * Convert the c4d left-handed world coordinate to camera right-handed coordinate.
-     * Update the parameters.
-     */
-    void update();
+    void setLookAt(float4 _position, float4 quaternion, Renderer::System system = Renderer::RIGHT);
 
 private:
-    /**
-    * Calculate rotation matrix of H, P, B.
-    * @param H
-    * @param P
-    * @param B
-    */
-    void calculateHPB(float3x3 &H, float3x3 &P, float3x3 &B) const;
-
-    /**
-     * Calculate rotation matrix l_R3.
-     */
-    float3x3 calculateRotateMatrix();
 };
 
 #endif

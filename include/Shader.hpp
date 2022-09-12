@@ -6,36 +6,9 @@
 #define RENDERER_SHADER_HPP
 
 #include "Fragment.hpp"
-#include "Vertex.hpp"
-#include "Camera.hpp"
+#include "HitRecord.hpp"
 #include "Texture.hpp"
-#include "State.hpp"
-#include "Ray.hpp"
-
-class Light;
-
-class Uniform
-{
-public:
-    float ka; // ambient coefficient
-    float kd; // diffuse coefficient
-    float ks; // specular coefficient
-    float specRank;
-
-    Camera *camera;
-    std::vector<Light *> *lightSource;
-
-    Texture2D *baseTexture;
-    Render::TextureType textureType;
-    Render::SamplerType samplerType;
-
-    Uniform(){}
-
-    Uniform(float _ka, float _kd, float _ks, float _spec):ka(_ka), kd(_kd), ks(_ks), specRank(_spec),
-                                                          lightSource(nullptr), samplerType(Render::NORMAL){}
-
-    ~Uniform() = default;
-};
+#include "Uniform.hpp"
 
 class Shader
 {
@@ -44,7 +17,8 @@ private:
 protected:
     Uniform *uniform; // store current statement
 public:
-    Shader():uniform(nullptr){}
+    Shader(): uniform(nullptr)
+    {}
 
     virtual ~Shader() = default;
 
@@ -58,48 +32,15 @@ public:
     }
 
     /**
-     * Set shader light source.
-     * @param light
+     * Get a instance and reset.
+     * @return shader instance
      */
-    void setLight(std::vector<Light *> *light)
+    static Shader *getInstance()
     {
-        uniform->lightSource = light;
-    }
-
-    /**
-     * Set camera matrix.
-     * @param M
-     */
-    void setCamera(Camera *c)
-    {
-        uniform->camera = c;
-    }
-
-    /**
-     * Set texture type.
-     * @param type
-     */
-    void setTextureType(Render::TextureType type)
-    {
-        uniform->textureType = type;
-    }
-
-    /**
-     * Set texture sampler type.
-     * @param type
-     */
-    void setSampler(Render::SamplerType type)
-    {
-        uniform->samplerType = type;
-    }
-
-    /**
-    * Get a instance and reset.
-    */
-    static Shader *instance()
-    {
-        if (shader == nullptr)
+        if (!shader)
+        {
             shader = new Shader();
+        }
         return shader;
     };
 
@@ -107,7 +48,8 @@ public:
      *
      * @param vertex
      */
-    virtual void vertexShader(VertexP &vertex){}
+    virtual void vertexShader(VertexP &vertex)
+    {}
 
     /**
      *

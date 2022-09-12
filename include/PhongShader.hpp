@@ -11,12 +11,13 @@ class PhongShader: public Shader
 {
     static PhongShader *shader;
 
-    PhongShader()= default;
+    PhongShader() = default;
+
 public:
     ~PhongShader() override;
 
     /**
-     * Get a instance and reset.
+     * Get a getInstance and reset.
      */
     static PhongShader *instance();
 

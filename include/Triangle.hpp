@@ -8,12 +8,14 @@
 #include "Vertex.hpp"
 #include "Primitive.hpp"
 
-class Triangle:public Primitive
+class Mesh;
+
+class Triangle: public Primitive
 {
 public:
     uint32_t vertexIndex[3]; // vertices index
-    float4 normal; // Normal vector of triangle plane
-    float4 center; // primitive center coordinate in world space
+    //    float4 normal; // Normal vector of triangle plane
+    Mesh *mesh;
 
     Triangle();
 
@@ -31,19 +33,17 @@ public:
     /**
      *
      * @param ray
-     * @param t_min
-     * @param t_max
-     * @param vertices
+     * @param tMin
+     * @param tMax
      * @param record
      * @return
      */
-    bool hit(Ray &ray, float t_min, float t_max, const std::vector<Vertex> &vertices, HitRecord &record) override;
+    bool hit(Ray &ray, float tMin, float tMax, HitRecord &record) override;
 
     /**
      * Destroy the leaf node. For a triangle, do nothing.
-     * @param node
      */
-    void destroy(Primitive *node) override;
+    void destroy() override;
 };
 
 #endif

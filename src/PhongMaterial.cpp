@@ -5,12 +5,17 @@
 #include "PhongMaterial.hpp"
 #include "PhongShader.hpp"
 
-PhongMaterial::PhongMaterial(){
+PhongMaterial::PhongMaterial()
+{
     setShader(PhongShader::instance());
-//    shadow_shader = ShadowShader::instance();
 }
 
 void PhongMaterial::destroy()
 {
-    baseTexture.reset();
+    textureBase.reset();
+    textureNormal.reset();
+    textureAO.reset();
+    textureMetalness.reset();
+    textureRoughness.reset();
+    textureEmission.reset();
 }

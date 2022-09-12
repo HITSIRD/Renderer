@@ -14,14 +14,15 @@ public:
     float4 flatNormal; // flat normal vector
     float4 normal; // interpolation normal vector
     float4 world; // world space
-//    float4 screen; // screen space coordinate
+    float4 tangent; // tangent vector
     float2 textureCoord; // texture coordinate
     float clipZ;
 
     float2 ddx; // to get du/dx, dv/dx
     float2 ddy; // to get du/dy, dv/dy
 
-    Fragment(){}
+    Fragment()
+    {}
 
     ~Fragment() = default;
 };

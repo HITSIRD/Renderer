@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
-project(Renderer)
+project(renderer)
 
 set(CMAKE_CXX_STANDARD 20)
 
-SET(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/13.0.0_2/bin/clang-13)
+#SET(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/13.0.1/bin/clang-13)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 find_package(OpenCV REQUIRED)
@@ -23,7 +23,7 @@ aux_source_directory(src SRC)
 #    link_directories(/opt/homebrew/Cellar/llvm/13.0.0_2/lib/libomp.dylib)
 #endif ()
 
-add_executable(Renderer ${SRC})
+add_executable(renderer ${SRC})
 
-target_link_libraries(Renderer /opt/homebrew/Cellar/llvm/13.0.0_2/lib/libc++.dylib)
-target_link_libraries(Renderer ${OpenCV_LIBRARIES})
+#target_link_libraries(renderer /opt/homebrew/Cellar/llvm/13.0.1/lib/libc++.dylib)
+target_link_libraries(renderer ${OpenCV_LIBRARIES})

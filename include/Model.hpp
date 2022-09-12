@@ -6,11 +6,12 @@
 #define RENDERER_MODEL_HPP
 
 #include "Vertex.hpp"
-#include "Triangle.hpp"
 #include "BVH.hpp"
 #include <vector>
 
 class Material;
+
+class Triangle;
 
 class Mesh
 {
@@ -21,16 +22,13 @@ public:
     std::vector<Vertex> vertices;
     std::vector<Triangle> triangles;
 
+    float4x4 matrixModel; // model space to world space matrix
     Material *material;
     BVHNode *BVH;
 
-    Mesh():numVertices(0), numTriangles(0), material(nullptr), BVH(nullptr){}
+    Mesh();
 
-    ~Mesh()
-    {
-//        delete material;
-        delete BVH;
-    }
+    ~Mesh();
 
     /**
      *
@@ -54,16 +52,16 @@ class Model
 {
 public:
     std::vector<Mesh *> meshes;
+    BVHNode *BVH; // scene BVH root node
 
-    Model(){}
+    Model();
 
-    ~Model()
-    {
-        for (auto mesh: meshes)
-        {
-            delete mesh;
-        }
-    }
+    ~Model();
+
+    /**
+     *
+     */
+    void createBVH();
 
     /**
      *

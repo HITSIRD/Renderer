@@ -8,18 +8,27 @@
 #include "Shader.hpp"
 #include "Texture.hpp"
 
+namespace Renderer
+{
+    enum TextureType
+    {
+        TEXTURE_BASE, TEXTURE_NORMAL, TEXTURE_AO, TEXTURE_METALNESS, TEXTURE_ROUGHNESS, TEXTURE_EMISSION,
+    };
+}
+
 class Material
 {
 protected:
     Shader *shader;
 
 public:
-    std::shared_ptr<Texture2D> baseTexture;
-    std::shared_ptr<Texture2D> normalTexture;
-//    std::shared_ptr<Texture> glossness_texture;
-//    std::shared_ptr<Texture> metalness_texture;
-//    std::shared_ptr<Texture> base_texture;
-//    std::shared_ptr<Texture> base_texture;
+    std::shared_ptr<Texture2D<unsigned char>> textureBase; // base color texture
+    std::shared_ptr<Texture2D<unsigned char>> textureNormal; // normal texture
+    std::shared_ptr<Texture2D<unsigned char>> textureAO; // ambient occlusion texture
+    std::shared_ptr<Texture2D<unsigned char>> textureMetalness; // metalness texture
+    std::shared_ptr<Texture2D<unsigned char>> textureRoughness; // roughness texture
+    std::shared_ptr<Texture2D<unsigned char>> textureEmission; // emission texture
+
     float ambient;
     float diffuse;
     float specular;
@@ -37,15 +46,16 @@ public:
 
     /**
      *
-     * @param t
+     * @param texture2D
+     * @param type
      */
-    void setTexture(Texture2D *t);
+    void setTexture(Texture2D<unsigned char> *texture2D, Renderer::TextureType type);
 
     /**
      *
-     * @param u
+     * @param uniform
      */
-    Uniform getUniform() const;
+    virtual void setUniform(Uniform &uniform) const;
 
     /**
      *
