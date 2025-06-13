@@ -7,8 +7,7 @@
 
 #include "ShadowShader.hpp"
 
-class SunLightShadowShader: public ShadowShader
-{
+class SunLightShadowShader : public ShadowShader {
     static SunLightShadowShader *shader;
 
     SunLightShadowShader() = default;

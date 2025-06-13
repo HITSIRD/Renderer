@@ -7,8 +7,7 @@
 
 #include "Material.hpp"
 
-class PhongMaterial: public Material
-{
+class PhongMaterial : public Material {
 public:
     PhongMaterial();
 

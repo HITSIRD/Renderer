@@ -10,8 +10,7 @@
 
 class Mesh;
 
-class Triangle: public Primitive
-{
+class Triangle : public Primitive {
 public:
     uint32_t vertexIndex[3]; // vertices index
     //    float4 normal; // Normal vector of triangle plane

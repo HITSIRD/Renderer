@@ -13,8 +13,7 @@ class Material;
 
 class Triangle;
 
-class Mesh
-{
+class Mesh {
 public:
     uint32_t numVertices;
     uint32_t numTriangles;
@@ -48,8 +47,7 @@ public:
     void createBVH();
 };
 
-class Model
-{
+class Model {
 public:
     std::vector<Mesh *> meshes;
     BVHNode *BVH; // scene BVH root node

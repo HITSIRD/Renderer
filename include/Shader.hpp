@@ -10,15 +10,14 @@
 #include "Texture.hpp"
 #include "Uniform.hpp"
 
-class Shader
-{
+class Shader {
 private:
     static Shader *shader;
+
 protected:
-    Uniform *uniform; // store current statement
+    Uniform uniform; // store current statement
 public:
-    Shader(): uniform(nullptr)
-    {}
+    Shader() = default;
 
     virtual ~Shader() = default;
 
@@ -26,8 +25,7 @@ public:
      * Set uniform parameters.
      * @param u
      */
-    void setUniform(Uniform *u)
-    {
+    void setUniform(const Uniform &u) {
         uniform = u;
     }
 
@@ -35,10 +33,8 @@ public:
      * Get a instance and reset.
      * @return shader instance
      */
-    static Shader *getInstance()
-    {
-        if (!shader)
-        {
+    static Shader *getInstance() {
+        if (!shader) {
             shader = new Shader();
         }
         return shader;
@@ -48,16 +44,15 @@ public:
      *
      * @param vertex
      */
-    virtual void vertexShader(VertexP &vertex)
-    {}
+    virtual void vertexShader(VertexP &vertex) {
+    }
 
     /**
      *
      * @param frag
      * @return color
      */
-    virtual float4 fragmentShader(Fragment &frag)
-    {
+    virtual float4 fragmentShader(Fragment &frag) {
         return {0, 0, 0, 1.0f};
     }
 
@@ -66,17 +61,15 @@ public:
      * @param record
      * @return color
      */
-    virtual float4 rayShader(HitRecord &record)
-    {
+    virtual float4 rayShader(HitRecord &record) {
         return {0, 0, 0, 1.0f};
     }
 
     /**
      *
      */
-    virtual void destroy()
-    {
-        uniform = nullptr;
+    virtual void destroy() {
+        // uniform = nullptr;
         delete shader;
         shader = nullptr;
     }

@@ -7,8 +7,7 @@
 
 #include "Shader.hpp"
 
-class ShadowShader: public Shader
-{
+class ShadowShader : public Shader {
     static ShadowShader *shader;
 
 public:
@@ -16,20 +15,18 @@ public:
 
     virtual ~ShadowShader() = default;
 
-    static ShadowShader *instance()
-    {
-        if (!shader)
-        {
+    static ShadowShader *instance() {
+        if (!shader) {
             shader = new ShadowShader();
         }
         return shader;
     }
 
-    virtual void vertexShader(VertexP &vertex)
-    {}
+    virtual void vertexShader(VertexP &vertex) {
+    }
 
-    virtual void destroy()
-    {}
+    virtual void destroy() {
+    }
 };
 
 #endif //RENDERER_SHADOWSHADER_HPP

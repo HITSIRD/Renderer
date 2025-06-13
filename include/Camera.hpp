@@ -7,16 +7,13 @@
 
 #include "Type.hpp"
 
-namespace Renderer
-{
-    enum System
-    {
+namespace Renderer {
+    enum System {
         RIGHT = 0,
         LEFT = 1
     };
 
-    enum EulerAngleOrder
-    {
+    enum EulerAngleOrder {
         ZYX,
         ZXY,
         YXZ,
@@ -26,8 +23,7 @@ namespace Renderer
     };
 }
 
-class Camera
-{
+class Camera {
 public:
     // camera inner parameters
     int x; // pixel number in x
@@ -63,8 +59,8 @@ public:
     /**
      *
      */
-    Camera()
-    {}
+    Camera() {
+    }
 
     /**
      * destructor
@@ -108,8 +104,8 @@ public:
      * @param system right hand system or left hand system
      */
     void setLookAt(
-            float4 _position, float yaw, float pitch, float roll, Renderer::EulerAngleOrder order = Renderer::ZYX,
-            Renderer::System system = Renderer::RIGHT);
+        float4 _position, float yaw, float pitch, float roll, Renderer::EulerAngleOrder order = Renderer::ZYX,
+        Renderer::System system = Renderer::RIGHT);
 
     /**
      *

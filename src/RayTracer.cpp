@@ -17,8 +17,7 @@
 using namespace std;
 using namespace Renderer;
 
-void RayTracer::readConfig(const string &modelConfig, const string &renderingConfig)
-{
+void RayTracer::readConfig(const string &modelConfig, const string &renderingConfig) {
     cout << "read config... " << endl;
     struct timeval t0, t1;
     double start_time, end_time, cost;
@@ -48,8 +47,7 @@ void RayTracer::readConfig(const string &modelConfig, const string &renderingCon
     //    iodata::write_ply(&s->model->meshes[0]); // write ply file
 }
 
-void RayTracer::initialize()
-{
+void RayTracer::initialize() {
     cout << "initialize..." << endl;
     frameBuffer = new FrameBuffer(s->camera->x, s->camera->y);
     s->resetBuffer(); // initialize buffers
@@ -63,15 +61,12 @@ void RayTracer::initialize()
     //    cout << "max_threads: " << s->num_threads << endl;
 
     // calculate vertex normal
-    for (auto &mesh: s->model->meshes)
-    {
+    for (auto &mesh: s->model->meshes) {
         auto *normal_sum = new float4[mesh->numVertices]; // sum of triangle normal vector contains vertex
-        for (int i = 0; i < mesh->numVertices; i++)
-        {
+        for (int i = 0; i < mesh->numVertices; i++) {
             normal_sum[i] << 0, 0, 0, 0;
         }
-        for (const auto &tri: mesh->triangles)
-        {
+        for (const auto &tri: mesh->triangles) {
             float4 OA = mesh->vertices[tri.vertexIndex[1]].position - mesh->vertices[tri.vertexIndex[0]].position;
             float4 OB = mesh->vertices[tri.vertexIndex[2]].position - mesh->vertices[tri.vertexIndex[0]].position;
             float4 normal = OA.cross3(OB).normalized(); // normalize
@@ -79,8 +74,7 @@ void RayTracer::initialize()
             normal_sum[tri.vertexIndex[1]] += normal;
             normal_sum[tri.vertexIndex[2]] += normal;
         }
-        for (int i = 0; i < mesh->numVertices; i++)
-        {
+        for (int i = 0; i < mesh->numVertices; i++) {
             mesh->vertices[i].normal = normal_sum[i].normalized();
         }
 
@@ -88,26 +82,22 @@ void RayTracer::initialize()
     }
 
     // calculate vertex tangent
-    for (auto &mesh: s->model->meshes)
-    {
+    for (auto &mesh: s->model->meshes) {
         if (mesh->material->textureNormal) // process only when normal texture is available
         {
             auto *tangentSum = new float4[mesh->numVertices]; // sum of tangent vector of vertices in each face
-            for (int i = 0; i < mesh->numVertices; i++)
-            {
+            for (int i = 0; i < mesh->numVertices; i++) {
                 tangentSum[i] << 0, 0, 0, 0;
             }
-            for (const auto &tri: mesh->triangles)
-            {
+            for (const auto &tri: mesh->triangles) {
                 float4 tangent =
                         calculateTangent(mesh->vertices[tri.vertexIndex[0]], mesh->vertices[tri.vertexIndex[1]],
-                                mesh->vertices[tri.vertexIndex[2]]);
+                                         mesh->vertices[tri.vertexIndex[2]]);
                 tangentSum[tri.vertexIndex[0]] += tangent;
                 tangentSum[tri.vertexIndex[1]] += tangent;
                 tangentSum[tri.vertexIndex[2]] += tangent;
             }
-            for (int i = 0; i < mesh->numVertices; i++)
-            {
+            for (int i = 0; i < mesh->numVertices; i++) {
                 mesh->vertices[i].tangent = tangentSum[i].normalized();
             }
 
@@ -116,10 +106,8 @@ void RayTracer::initialize()
     }
 
     // set triangle attribute
-    for (auto &mesh: s->model->meshes)
-    {
-        for (auto &triangle: mesh->triangles)
-        {
+    for (auto &mesh: s->model->meshes) {
+        for (auto &triangle: mesh->triangles) {
             triangle.mesh = mesh;
         }
     }
@@ -128,8 +116,7 @@ void RayTracer::initialize()
     randomFloatBuffer = getRandomFloatBuffer(RANDOM_BUFFER_SIZE);
 }
 
-void RayTracer::render(Renderer::RenderMode mode)
-{
+void RayTracer::render(Renderer::RenderMode mode) {
     struct timeval start, end, t0, t1;
     double start_time, end_time;
 
@@ -141,11 +128,9 @@ void RayTracer::render(Renderer::RenderMode mode)
     double cost = end_time - start_time;
     cout << "initialize cost time: " << cost << " s" << endl;
 
-    if (mode == Renderer::DO_LOOP)
-    {
+    if (mode == Renderer::DO_LOOP) {
         //        render_loop();
-    } else if (mode == Renderer::OUTPUT_SINGLE)
-    {
+    } else if (mode == Renderer::OUTPUT_SINGLE) {
         gettimeofday(&start, NULL); // start
         draw();
         gettimeofday(&end, NULL);
@@ -158,50 +143,44 @@ void RayTracer::render(Renderer::RenderMode mode)
     }
 }
 
-void RayTracer::draw()
-{
+void RayTracer::draw() {
     size_t sample = s->maxSample;
-    size_t sqrtSample = (int)round(sqrt((float)(s->maxSample)));
+    size_t sqrtSample = (int) round(sqrt((float) (s->maxSample)));
     size_t realSample = sqrtSample * sqrtSample;
-    float step = 1.0f / (float)(sqrtSample);
+    float step = 1.0f / (float) (sqrtSample);
     float halfStep = 0.5f * step;
     float4 color_buffer;
     cout << "real sample: " << realSample << endl;
     srand(time(nullptr));
 
-    for (int i = 0; i < s->camera->y; i++)
-    {
-        for (int j = 0; j < s->camera->x; j++)
-        {
+    for (int i = 0; i < s->camera->y; i++) {
+        for (int j = 0; j < s->camera->x; j++) {
             color_buffer << 0, 0, 0, 1.0f;
             //            for (int k = 0; k < realSample; k++)
             //            {
             //                auto _x = (float)j + abs(randomFloatBuffer[random() % RANDOM_BUFFER_SIZE]);
             //                auto _y = (float)i + abs(randomFloatBuffer[random() % RANDOM_BUFFER_SIZE]);
             // jittering sampling
-            auto _x = (float)j + halfStep;
-            auto _y = (float)i + halfStep;
-            for (int m = 0; m < sqrtSample; m++)
-            {
-                for (int n = 0; n < sqrtSample; n++)
-                {
+            auto _x = (float) j + halfStep;
+            auto _y = (float) i + halfStep;
+            for (int m = 0; m < sqrtSample; m++) {
+                for (int n = 0; n < sqrtSample; n++) {
                     Ray ray =
-                            emitRay(_x + (float)n * step +
-                                            halfStep * (2.0f * randomFloatBuffer[random() % RANDOM_BUFFER_SIZE] - 1.0f),
-                                    _y + (float)m * step + halfStep *
-                                            (2.0f * randomFloatBuffer[random() % RANDOM_BUFFER_SIZE] - 1.0f));
+                            emitRay(_x + (float) n * step +
+                                    halfStep * (2.0f * randomFloatBuffer[random() % RANDOM_BUFFER_SIZE] - 1.0f),
+                                    _y + (float) m * step + halfStep *
+                                    (2.0f * randomFloatBuffer[random() % RANDOM_BUFFER_SIZE] - 1.0f));
                     //                Ray ray = emitRay(_x, _y);
                     color_buffer += routeTracing(ray, 0);;
                 }
             }
             //            }
-            writeColor(j, i, color_buffer / (float)realSample);
+            writeColor(j, i, color_buffer / (float) realSample);
         }
     }
 }
 
-inline Ray RayTracer::emitRay(float x, float y) const
-{
+inline Ray RayTracer::emitRay(float x, float y) const {
     float4 direction(x, y, 0, 1.0f);
     direction = s->camera->matrixScreenToView * direction;
     direction = direction / direction.w();
@@ -210,45 +189,37 @@ inline Ray RayTracer::emitRay(float x, float y) const
     return {s->camera->position, direction};
 }
 
-float4 RayTracer::routeTracing(Ray &ray, int depth) const
-{
+float4 RayTracer::routeTracing(Ray &ray, int depth) const {
     HitRecord record;
-    if (s->model->BVH->hit(ray, TMin, TMax, record))
-    {
+
+    if (s->model->BVH->hit(ray, TMin, TMax, record)) {
         record.position = ray.origin + record.t * ray.direction;
         Uniform uniform;
         uniform.viewPosition = ray.origin;
         uniform.lightSource = &s->lightSource;
         record.material->setUniform(uniform);
         s->shader = record.material->getShader(); // set shader for material
-        s->shader->setUniform(&uniform); // set uniform
+        s->shader->setUniform(uniform); // set uniform
 
-        for (auto &light: s->lightSource)
-        {
+        for (auto &light: s->lightSource) {
             HitRecord shadowRec;
-            if (light->type == SUN)
-            {
-                auto sun = (SunLight *)light;
+            if (light->type == SUN) {
+                auto sun = (SunLight *) light;
                 Ray shadowRay =
                         Ray(record.position + sun->direct * Epsilon, sun->direct); // to avoid self-occlusion
 
-                if (s->model->BVH->hit(shadowRay, TMin, TMax, shadowRec))
-                {
+                if (s->model->BVH->hit(shadowRay, TMin, TMax, shadowRec)) {
                     record.isInShadow.push_back(true);
-                } else
-                {
+                } else {
                     record.isInShadow.push_back(false);
                 }
-            } else if (light->type == POINT)
-            {
+            } else if (light->type == POINT) {
                 float4 direct = (light->position - record.position).normalized();
                 float t_max = (light->position - record.position).lpNorm<2>();
                 Ray shadow_ray = Ray(record.position + direct * Epsilon, direct); // to avoid self-occlusion
 
-                if (s->model->BVH->hit(shadow_ray, TMin, TMax, shadowRec))
-                {
-                    if (shadowRec.t < t_max)
-                    {
+                if (s->model->BVH->hit(shadow_ray, TMin, TMax, shadowRec)) {
+                    if (shadowRec.t < t_max) {
                         record.isInShadow.push_back(true);
                         continue;
                     }
@@ -288,8 +259,7 @@ float4 RayTracer::routeTracing(Ray &ray, int depth) const
     return {0, 0, 0, 1.0f};
 }
 
-void RayTracer::writeColor(int x, int y, const float4 &color) const
-{
+void RayTracer::writeColor(int x, int y, const float4 &color) const {
     int index = y * s->camera->x + x;
     frameBuffer->writeColor(index, color);
 }

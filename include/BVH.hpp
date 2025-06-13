@@ -11,8 +11,7 @@
 #include "Ray.hpp"
 #include "Triangle.hpp"
 
-class BVHNode: public Primitive
-{
+class BVHNode : public Primitive {
 public:
     Primitive *left;
     Primitive *right;

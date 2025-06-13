@@ -7,8 +7,7 @@
 
 #include "Shader.hpp"
 
-class PhongShader: public Shader
-{
+class PhongShader : public Shader {
     static PhongShader *shader;
 
     PhongShader() = default;
@@ -44,10 +43,9 @@ public:
     /**
      *
      */
-    void destroy() override
-    {
-        delete uniform;
-        uniform = nullptr;
+    void destroy() override {
+        // delete uniform;
+        // uniform = nullptr;
     }
 
     /**

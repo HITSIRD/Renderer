@@ -11,16 +11,13 @@
 
 class ShadowShader;
 
-namespace Renderer
-{
-    enum LIGHT_TYPE
-    {
+namespace Renderer {
+    enum LIGHT_TYPE {
         POINT, SUN
     };
 }
 
-class Light
-{
+class Light {
 public:
     Renderer::LIGHT_TYPE type;
     int shadowSize; // resolution size \times size
@@ -36,8 +33,7 @@ public:
     ~Light();
 };
 
-class PointLight: public Light
-{
+class PointLight : public Light {
 public:
     float4x4 matrixWorldToScreen[6];
     float4x4 VP[6]; // MVP matrix
@@ -69,8 +65,7 @@ public:
     void setShadowMap(int faceIndex, Image<float> *buffer);
 };
 
-class SunLight: public Light
-{
+class SunLight : public Light {
 public:
     float4 up;
     float4 direct; // direct light

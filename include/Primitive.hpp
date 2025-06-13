@@ -9,10 +9,10 @@
 #include "HitRecord.hpp"
 #include "Vertex.hpp"
 
-class Primitive
-{
+class Primitive {
 protected:
-    Primitive() {}
+    Primitive() {
+    }
 
 public:
     BoundingBox box;
@@ -28,8 +28,7 @@ public:
      * @param record
      * @return if hit a primitive object
      */
-    virtual bool hit(Ray &ray, float tMin, float tMax, HitRecord &record)
-    {
+    virtual bool hit(Ray &ray, float tMin, float tMax, HitRecord &record) {
         return true;
     }
 
@@ -37,8 +36,7 @@ public:
      * Destroy the node.
      * @param node
      */
-    virtual void destroy()
-    {
+    virtual void destroy() {
         delete this;
     }
 };

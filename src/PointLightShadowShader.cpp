@@ -15,24 +15,20 @@ PointLightShadowShader *PointLightShadowShader::shader = nullptr;
 
 PointLightShadowShader::~PointLightShadowShader() = default;
 
-PointLightShadowShader *PointLightShadowShader::instance()
-{
-    if (!shader)
-    {
+PointLightShadowShader *PointLightShadowShader::instance() {
+    if (!shader) {
         shader = new PointLightShadowShader();
     }
     return shader;
 }
 
-void PointLightShadowShader::vertexShader(VertexP &vertex)
-{
-    vertex.screen = uniform->VP * vertex.position;
+void PointLightShadowShader::vertexShader(VertexP &vertex) {
+    vertex.screen = uniform.VP * vertex.position;
     vertex.zRec = 1.0f / vertex.screen.w();
 }
 
-void PointLightShadowShader::destroy()
-{
-    uniform = nullptr;
+void PointLightShadowShader::destroy() {
+    // uniform = nullptr;
     delete shader;
     shader = nullptr;
 }

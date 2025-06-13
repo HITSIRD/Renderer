@@ -7,8 +7,7 @@
 
 #include "Shader.hpp"
 
-class FlatShader: public Shader
-{
+class FlatShader : public Shader {
     static FlatShader *shader;
 
     FlatShader() = default;

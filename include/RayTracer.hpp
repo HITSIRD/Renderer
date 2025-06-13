@@ -12,26 +12,23 @@
 
 #define RANDOM_BUFFER_SIZE 1048576 // 1 << 20
 
-namespace Renderer
-{
+namespace Renderer {
     static const float TMin = -100000.0f; // minimum hit time
     static const float TMax = 100000.0f; // maximum hit time
 }
 
-class RayTracer
-{
+class RayTracer {
 public:
     State *s;
     FrameBuffer *frameBuffer;
     //    bool stop; // if loop should stop rendering
 
-    RayTracer(): s(nullptr)
-    {}
+    RayTracer(): s(nullptr) {
+    }
 
     //    Ray(bool _stop):stop(_stop), s(nullptr){}
 
-    ~RayTracer()
-    {
+    ~RayTracer() {
         delete s;
     }
 

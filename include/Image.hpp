@@ -5,8 +5,8 @@
 #ifndef RENDERER_IMAGE_HPP
 #define RENDERER_IMAGE_HPP
 
-template<typename T> class Image
-{
+template<typename T>
+class Image {
 public:
     int x; // width of image
     int y; // height of image
@@ -20,16 +20,14 @@ public:
      * @param _y height
      * @param channel
      */
-    Image(int _x, int _y, int _channel)
-    {
+    Image(int _x, int _y, int _channel) {
         x = _x;
         y = _y;
         channel = _channel;
         data = new T[x * y * channel];
     }
 
-    ~Image()
-    {
+    ~Image() {
         delete[] data;
         data = nullptr;
     }
@@ -38,14 +36,11 @@ public:
      *
      * @param d
      */
-    void setData(const T *d)
-    {
-        if (!data)
-        {
+    void setData(const T *d) {
+        if (!data) {
             data = new T[x * y * channel];
         }
-        for (int i = 0; i < x * y * channel; i++)
-        {
+        for (int i = 0; i < x * y * channel; i++) {
             data[i] = d[i];
         }
     }
@@ -54,12 +49,9 @@ public:
      *
      * @param value
      */
-    void reset(T value)
-    {
-        if (data)
-        {
-            for (int i = 0; i < x * y * channel; i++)
-            {
+    void reset(T value) {
+        if (data) {
+            for (int i = 0; i < x * y * channel; i++) {
                 data[i] = value;
             }
         }

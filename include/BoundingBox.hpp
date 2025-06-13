@@ -11,8 +11,7 @@
 /**
  * AABB
  */
-class BoundingBox
-{
+class BoundingBox {
 public:
     float3 minPoint;
     float3 maxPoint;

@@ -7,9 +7,7 @@
 
 #include "PhongMaterial.hpp"
 
-class PBRMaterial: public PhongMaterial
-{
-
+class PBRMaterial : public PhongMaterial {
 };
 
 #endif //RENDERER_PBRMATERIAL_HPP

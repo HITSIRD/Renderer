@@ -11,8 +11,7 @@
 #define GAMMA 1/2.2
 #define Z_GAMMA 1/2.2
 
-class iodata
-{
+class iodata {
 public:
     /**
      * Read model file configuration data.

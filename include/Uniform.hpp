@@ -9,8 +9,7 @@
 
 class Light;
 
-class Uniform
-{
+class Uniform {
 public:
     // camera parameters
     float4 viewPosition; // world space
@@ -37,13 +36,15 @@ public:
     Renderer::SamplerType samplerType;
 
     Uniform(): textureBase(nullptr), textureNormal(nullptr), textureAO(nullptr), textureMetalness(nullptr),
-            textureRoughness(nullptr), textureEmission(nullptr)
-    {}
+               textureRoughness(nullptr), textureEmission(nullptr) {
+    }
 
     Uniform(float _ka, float _kd, float _ks, float _spec): ka(_ka), kd(_kd), ks(_ks), specRank(_spec),
-            lightSource(nullptr), samplerType(Renderer::NORMAL), textureBase(nullptr), textureNormal(nullptr),
-            textureAO(nullptr), textureMetalness(nullptr), textureRoughness(nullptr), textureEmission(nullptr)
-    {}
+                                                           lightSource(nullptr), samplerType(Renderer::NORMAL),
+                                                           textureBase(nullptr), textureNormal(nullptr),
+                                                           textureAO(nullptr), textureMetalness(nullptr),
+                                                           textureRoughness(nullptr), textureEmission(nullptr) {
+    }
 
     ~Uniform() = default;
 
@@ -55,9 +56,8 @@ public:
      * @param _matrixWorldToScreen
      */
     void setup(
-            const float4 &_viewPosition, const float4x4 &_VP, const float4x4 &_matrixViewport,
-            const float4x4 &_matrixWorldToScreen)
-    {
+        const float4 &_viewPosition, const float4x4 &_VP, const float4x4 &_matrixViewport,
+        const float4x4 &_matrixWorldToScreen) {
         viewPosition = std::move(_viewPosition);
         VP = std::move(_VP);
         matrixViewport = std::move(_matrixViewport);

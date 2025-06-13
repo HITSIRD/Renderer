@@ -13,8 +13,7 @@ using namespace Renderer;
 
 Triangle::Triangle() = default;
 
-Triangle::Triangle(const std::vector<Vertex> &vertices, uint32_t v_0, uint32_t v_1, uint32_t v_2)
-{
+Triangle::Triangle(const std::vector<Vertex> &vertices, uint32_t v_0, uint32_t v_1, uint32_t v_2) {
     vertexIndex[0] = v_0;
     vertexIndex[1] = v_1;
     vertexIndex[2] = v_2;
@@ -36,8 +35,7 @@ Triangle::Triangle(const std::vector<Vertex> &vertices, uint32_t v_0, uint32_t v
 
 Triangle::~Triangle() = default;
 
-bool Triangle::hit(Ray &ray, float tMin, float tMax, HitRecord &record)
-{
+bool Triangle::hit(Ray &ray, float tMin, float tMax, HitRecord &record) {
     const Vertex &v0 = mesh->vertices[vertexIndex[0]];
     const Vertex &v1 = mesh->vertices[vertexIndex[1]];
     const Vertex &v2 = mesh->vertices[vertexIndex[2]];
@@ -49,18 +47,15 @@ bool Triangle::hit(Ray &ray, float tMin, float tMax, HitRecord &record)
 
     // keep det > 0, modify T accordingly
     float4 T;
-    if (det > 0)
-    {
+    if (det > 0) {
         T = ray.origin - v0.position;
-    } else
-    {
+    } else {
         T = v0.position - ray.origin;
         det = -det;
     }
 
     // If determinant is near zero, ray lies in plane of triangle
-    if (det < 0.00000012f)
-    {
+    if (det < 0.00000012f) {
         return false;
     }
 
@@ -68,20 +63,17 @@ bool Triangle::hit(Ray &ray, float tMin, float tMax, HitRecord &record)
     // Calculate t, scale parameters, ray intersects triangle
     float t = E2.dot(Q);
 
-    if (t < 0)
-    {
+    if (t < 0) {
         return false;
     }
 
     float v = T.dot(P);
-    if (v < 0.0f || v > det)
-    {
+    if (v < 0.0f || v > det) {
         return false;
     }
 
     float w = ray.direction.dot(Q);
-    if (w < 0.0f || v + w > det)
-    {
+    if (w < 0.0f || v + w > det) {
         return false;
     }
 
@@ -100,7 +92,6 @@ bool Triangle::hit(Ray &ray, float tMin, float tMax, HitRecord &record)
     return true;
 }
 
-void Triangle::destroy()
-{
+void Triangle::destroy() {
     delete this;
 }

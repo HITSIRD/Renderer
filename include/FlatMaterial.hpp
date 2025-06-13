@@ -7,8 +7,7 @@
 
 #include "Material.hpp"
 
-class FlatMaterial: public Material
-{
+class FlatMaterial : public Material {
 public:
     FlatMaterial();
 

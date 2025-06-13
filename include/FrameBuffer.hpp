@@ -8,8 +8,7 @@
 #include "Type.hpp"
 #include "Image.hpp"
 
-class FrameBuffer
-{
+class FrameBuffer {
 public:
     Image<float> *colorBuffer;
 

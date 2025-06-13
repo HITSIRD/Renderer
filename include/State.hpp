@@ -10,36 +10,29 @@
 #include "Camera.hpp"
 #include "Shader.hpp"
 
-namespace Renderer
-{
-    enum RenderMode
-    {
+namespace Renderer {
+    enum RenderMode {
         DO_LOOP = 0, OUTPUT_SINGLE = 1, ANIMATION = 2
     };
 
-    enum RenderScene
-    {
+    enum RenderScene {
         FLAT, PHONG, PBR
     };
 
-    enum FaceCullMode
-    {
+    enum FaceCullMode {
         NONE, FRONT, BACK
     };
 
-    enum ShadowMode
-    {
+    enum ShadowMode {
         SHADOW, NO_SHADOW
     };
 
-    enum Projection
-    {
+    enum Projection {
         PERS, ORTHO
     };
 }
 
-class State
-{
+class State {
 public:
     int2 screenSize;
 

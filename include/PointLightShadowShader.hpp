@@ -7,8 +7,7 @@
 
 #include "ShadowShader.hpp"
 
-class PointLightShadowShader: public ShadowShader
-{
+class PointLightShadowShader : public ShadowShader {
     static PointLightShadowShader *shader;
 
     PointLightShadowShader() = default;

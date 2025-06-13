@@ -7,9 +7,7 @@
 
 #include "Primitive.hpp"
 
-class Sphere: public Primitive
-{
-
+class Sphere : public Primitive {
 };
 
 #endif //RENDERER_SPHERE_HPP

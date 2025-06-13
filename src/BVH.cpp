@@ -7,12 +7,11 @@
 
 using namespace std;
 
-BVHNode::BVHNode(): left(nullptr), right(nullptr) {}
+BVHNode::BVHNode(): left(nullptr), right(nullptr) {
+}
 
-BVHNode::BVHNode(std::vector<Primitive *> primitives, int axis)
-{
-    if (primitives.empty())
-    {
+BVHNode::BVHNode(std::vector<Primitive *> primitives, int axis) {
+    if (primitives.empty()) {
         left = nullptr;
         right = nullptr;
         return;
@@ -20,22 +19,19 @@ BVHNode::BVHNode(std::vector<Primitive *> primitives, int axis)
 
     axis = axis % 3;
     int size = primitives.size();
-    if (size == 1)
-    {
+    if (size == 1) {
         left = primitives[0];
         right = nullptr;
         box = primitives[0]->box;
         center = 0.5f * (box.maxPoint + box.minPoint);
         return;
-    } else if (size == 2)
-    {
+    } else if (size == 2) {
         left = primitives[0];
         right = primitives[1];
         box = BoundingBox::combine(primitives[0]->box, primitives[1]->box);
         center = 0.5f * (box.maxPoint + box.minPoint);
         return;
-    } else
-    {
+    } else {
         vector<Primitive *> leftList;
         vector<Primitive *> rightList;
 
@@ -44,26 +40,20 @@ BVHNode::BVHNode(std::vector<Primitive *> primitives, int axis)
         float max = min;
 
         // get min and max value in given axis
-        for (const auto &p: primitives)
-        {
+        for (const auto &p: primitives) {
             float tmp = p->center[axis];
-            if (tmp < min)
-            {
+            if (tmp < min) {
                 min = tmp;
             }
-            if (tmp > max)
-            {
+            if (tmp > max) {
                 max = tmp;
             }
         }
         float mid = 0.5f * (min + max);
-        for (const auto p: primitives)
-        {
-            if (p->center[axis] < mid)
-            {
+        for (const auto p: primitives) {
+            if (p->center[axis] < mid) {
                 leftList.push_back(p);
-            } else
-            {
+            } else {
                 rightList.push_back(p);
             }
         }
@@ -79,41 +69,32 @@ BVHNode::BVHNode(std::vector<Primitive *> primitives, int axis)
 
 BVHNode::~BVHNode() = default;
 
-bool BVHNode::hit(Ray &ray, float tMin, float tMax, HitRecord &record)
-{
-    if (box.hit(ray, tMin, tMax))
-    {
+bool BVHNode::hit(Ray &ray, float tMin, float tMax, HitRecord &record) {
+    if (box.hit(ray, tMin, tMax)) {
         HitRecord leftRecord, rightRecord;
         bool left_hit = left && left->hit(ray, tMin, tMax, leftRecord);
         bool right_hit = right && right->hit(ray, tMin, tMax, rightRecord);
-        if (left_hit && right_hit)
-        {
+        if (left_hit && right_hit) {
             record = leftRecord.t < rightRecord.t ? leftRecord : rightRecord;
             return true;
-        } else if (left_hit)
-        {
+        } else if (left_hit) {
             record = leftRecord;
             return true;
-        } else if (right_hit)
-        {
+        } else if (right_hit) {
             record = rightRecord;
             return true;
-        } else
-        {
+        } else {
             return false;
         }
     }
     return false;
 }
 
-void BVHNode::destroy()
-{
-    if (left)
-    {
+void BVHNode::destroy() {
+    if (left) {
         left->destroy();
     }
-    if (right)
-    {
+    if (right) {
         right->destroy();
     }
     delete this;

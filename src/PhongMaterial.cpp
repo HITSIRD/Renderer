@@ -5,13 +5,11 @@
 #include "PhongMaterial.hpp"
 #include "PhongShader.hpp"
 
-PhongMaterial::PhongMaterial()
-{
+PhongMaterial::PhongMaterial() {
     setShader(PhongShader::instance());
 }
 
-void PhongMaterial::destroy()
-{
+void PhongMaterial::destroy() {
     textureBase.reset();
     textureNormal.reset();
     textureAO.reset();

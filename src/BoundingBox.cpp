@@ -6,32 +6,28 @@
 
 using namespace std;
 
-BoundingBox::BoundingBox(): minPoint(0, 0, 0), maxPoint(0, 0, 0) {}
+BoundingBox::BoundingBox(): minPoint(0, 0, 0), maxPoint(0, 0, 0) {
+}
 
-BoundingBox::BoundingBox(float *bound)
-{
+BoundingBox::BoundingBox(float *bound) {
     minPoint = float3(bound[0], bound[2], bound[4]);
     maxPoint = float3(bound[1], bound[3], bound[5]);
 }
 
 BoundingBox::~BoundingBox() = default;
 
-void BoundingBox::setBound(float *bound)
-{
+void BoundingBox::setBound(float *bound) {
     minPoint = float3(bound[0], bound[2], bound[4]);
     maxPoint = float3(bound[1], bound[3], bound[5]);
 }
 
-void BoundingBox::setBound(float xMin, float xMax, float yMin, float yMax, float zMin, float zMax)
-{
+void BoundingBox::setBound(float xMin, float xMax, float yMin, float yMax, float zMin, float zMax) {
     minPoint = float3(xMin, yMin, zMin);
     maxPoint = float3(xMax, yMax, zMax);
 }
 
-bool BoundingBox::hit(const Ray &ray, float tMin, float tMax)
-{
-    for (int axis = 0; axis < 3; axis++)
-    {
+bool BoundingBox::hit(const Ray &ray, float tMin, float tMax) {
+    for (int axis = 0; axis < 3; axis++) {
         float d_inv = 1.0f / ray.direction[axis];
         float t_0 = (minPoint[axis] - ray.origin[axis]) * d_inv;
         float t_1 = (maxPoint[axis] - ray.origin[axis]) * d_inv;
@@ -40,16 +36,14 @@ bool BoundingBox::hit(const Ray &ray, float tMin, float tMax)
         tMin = max(tmpMin, tMin);
         tMax = min(tmpMax, tMax);
 
-        if (tMax < tMin)
-        {
+        if (tMax < tMin) {
             return false;
         }
     }
     return true;
 }
 
-BoundingBox BoundingBox::combine(const BoundingBox &box0, const BoundingBox &box1)
-{
+BoundingBox BoundingBox::combine(const BoundingBox &box0, const BoundingBox &box1) {
     float xMin = min(box0.minPoint.x(), box1.minPoint.x());
     float xMax = max(box0.maxPoint.x(), box1.maxPoint.x());
     float yMin = min(box0.minPoint.y(), box1.minPoint.y());

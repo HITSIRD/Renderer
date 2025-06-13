@@ -11,23 +11,19 @@ SunLightShadowShader *SunLightShadowShader::shader = nullptr;
 
 SunLightShadowShader::~SunLightShadowShader() = default;
 
-SunLightShadowShader *SunLightShadowShader::instance()
-{
-    if (!shader)
-    {
+SunLightShadowShader *SunLightShadowShader::instance() {
+    if (!shader) {
         shader = new SunLightShadowShader();
     }
     return shader;
 }
 
-void SunLightShadowShader::vertexShader(VertexP &vertex)
-{
-    vertex.screen = uniform->matrixWorldToScreen * vertex.position;
+void SunLightShadowShader::vertexShader(VertexP &vertex) {
+    vertex.screen = uniform.matrixWorldToScreen * vertex.position;
 }
 
-void SunLightShadowShader::destroy()
-{
-    uniform = nullptr;
+void SunLightShadowShader::destroy() {
+    // uniform = nullptr;
     delete shader;
     shader = nullptr;
 }

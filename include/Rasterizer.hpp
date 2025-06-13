@@ -9,29 +9,25 @@
 #include "State.hpp"
 #include "FrameBuffer.hpp"
 
-namespace Renderer
-{
-    enum Pass
-    {
+namespace Renderer {
+    enum Pass {
         SHADOW_PASS, SCENE_PASS
     };
 }
 
-class Rasterizer
-{
+class Rasterizer {
 public:
     State *s;
     FrameBuffer *frameBuffer;
     bool stop; // if loop should stop rendering
 
-    Rasterizer(): stop(false), s(nullptr), frameBuffer(nullptr)
-    {}
+    Rasterizer(): stop(false), s(nullptr), frameBuffer(nullptr) {
+    }
 
-    Rasterizer(bool _stop): stop(_stop), s(nullptr)
-    {}
+    Rasterizer(bool _stop): stop(_stop), s(nullptr) {
+    }
 
-    ~Rasterizer()
-    {
+    ~Rasterizer() {
         delete s;
     }
 

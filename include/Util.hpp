@@ -9,8 +9,7 @@
 #include "Vertex.hpp"
 #include "random"
 
-namespace Renderer
-{
+namespace Renderer {
     /**
      * utility constants
      */
@@ -29,15 +28,14 @@ namespace Renderer
 
     static const float4 ZeroFloat4(0, 0, 0, 0);
     static const float4
-            RandomFloat4(0.5305025836169190f, 0.4564595701410036f, -0.7142910258448331f, 0); // random float4 vector
+    RandomFloat4(0.5305025836169190f, 0.4564595701410036f, -0.7142910258448331f, 0); // random float4 vector
 
     /**
      *
      * @param deg
      * @return
      */
-    inline float deg2rad(float deg)
-    {
+    inline float deg2rad(float deg) {
         return deg * Pi / 180.0f;
     }
 
@@ -46,8 +44,7 @@ namespace Renderer
      * @param rad
      * @return
      */
-    inline float rad2deg(float rad)
-    {
+    inline float rad2deg(float rad) {
         return rad * 180.0f / Pi;
     }
 
@@ -72,8 +69,8 @@ namespace Renderer
      * @param v_1
      * @return
      */
-    template<typename T> inline T lerp(float x, T v_0, T v_1)
-    {
+    template<typename T>
+    inline T lerp(float x, T v_0, T v_1) {
         return v_0 + x * (v_1 - v_0);
     }
 
@@ -88,8 +85,8 @@ namespace Renderer
      * @param w
      * @return
      */
-    template<typename T> inline T lerp(const T &v0, const T &v1, const T &v2, float u, float v, float w)
-    {
+    template<typename T>
+    inline T lerp(const T &v0, const T &v1, const T &v2, float u, float v, float w) {
         return u * v0 + v * v1 + w * v2;
     }
 
@@ -103,8 +100,7 @@ namespace Renderer
      * @param w
      * @return
      */
-    inline Fragment lerp(const VertexP &v0, const VertexP &v1, const VertexP &v2, float u, float v, float w)
-    {
+    inline Fragment lerp(const VertexP &v0, const VertexP &v1, const VertexP &v2, float u, float v, float w) {
         Fragment frag;
         frag.world = lerp(v0.position, v1.position, v2.position, u, v, w);
         frag.normal = lerp(v0.normal, v1.normal, v2.normal, u, v, w);
@@ -122,8 +118,7 @@ namespace Renderer
      * @param v1
      * @return
      */
-    inline VertexP lerp(float x, const VertexP &v0, const VertexP &v1)
-    {
+    inline VertexP lerp(float x, const VertexP &v0, const VertexP &v1) {
         VertexP v;
         v.position = lerp(x, v0.position, v1.position);
         v.screen = lerp(x, v0.screen, v1.screen);
@@ -144,25 +139,21 @@ namespace Renderer
      * @param w
      * @return
      */
-    inline bool isInTriangle(float AB, float BC, float CA, float &u, float &v, float &w)
-    {
+    inline bool isInTriangle(float AB, float BC, float CA, float &u, float &v, float &w) {
         float S = 1.0f / (AB + BC + CA);
 
         u = BC * S;
-        if (u < 0 || u > 1.0f)
-        {
+        if (u < 0 || u > 1.0f) {
             return false;
         }
 
         v = CA * S;
-        if (v < 0 || v > 1.0f)
-        {
+        if (v < 0 || v > 1.0f) {
             return false;
         }
 
         w = AB * S;
-        if (w < 0 || w > 1.0f)
-        {
+        if (w < 0 || w > 1.0f) {
             return false;
         }
         u = BC * S;
@@ -175,8 +166,7 @@ namespace Renderer
      *
      * @param vertex
      */
-    inline void perspectiveDivision(VertexP &vertex)
-    {
+    inline void perspectiveDivision(VertexP &vertex) {
         vertex.position *= vertex.zRec;
         vertex.normal *= vertex.zRec;
         vertex.color *= vertex.zRec;
@@ -187,8 +177,7 @@ namespace Renderer
      *
      * @param frag
      */
-    inline void perspectiveRestore(Fragment &frag)
-    {
+    inline void perspectiveRestore(Fragment &frag) {
         frag.world *= frag.clipZ;
         frag.normal *= frag.clipZ;
         frag.color *= frag.clipZ;
@@ -201,8 +190,7 @@ namespace Renderer
      *
      * @param vertex
      */
-    inline void perspectiveRestore(VertexP &vertex)
-    {
+    inline void perspectiveRestore(VertexP &vertex) {
         float z = 1.0f / vertex.zRec;
         vertex.position *= z;
         vertex.normal *= z;
@@ -217,8 +205,7 @@ namespace Renderer
      * @param v2
      * @return tangent of vertices in a triangle
      */
-    inline float4 calculateTangent(const Vertex &v0, const Vertex &v1, const Vertex &v2)
-    {
+    inline float4 calculateTangent(const Vertex &v0, const Vertex &v1, const Vertex &v2) {
         float4 e1 = v1.position - v0.position;
         float4 e2 = v2.position - v0.position;
         float2 dUV1 = v1.textureCoord - v0.textureCoord;
@@ -229,8 +216,10 @@ namespace Renderer
             return RandomFloat4;
         }
         float invDet = 1.f / (dUV1.x() * dUV2.y() - dUV2.x() * dUV1.y());
-        return {invDet * (dUV2.y() * e1.x() - dUV1.y() * e2.x()), invDet * (dUV2.y() * e1.y() - dUV1.y() * e2.y()),
-                invDet * (dUV2.y() * e1.z() - dUV1.y() * e2.z()), 0};
+        return {
+            invDet * (dUV2.y() * e1.x() - dUV1.y() * e2.x()), invDet * (dUV2.y() * e1.y() - dUV1.y() * e2.y()),
+            invDet * (dUV2.y() * e1.z() - dUV1.y() * e2.z()), 0
+        };
     }
 
     /**
@@ -241,8 +230,7 @@ namespace Renderer
      * @param t11
      * @return
      */
-    inline bool overlap(float t00, float t01, float t10, float t11)
-    {
+    inline bool overlap(float t00, float t01, float t10, float t11) {
         return std::max(t00, t10) < std::min(t01, t11);
     }
 
@@ -252,8 +240,7 @@ namespace Renderer
      * @param sigma
      * @return
      */
-    static float gaussianRand(float mu, float sigma)
-    {
+    static float gaussianRand(float mu, float sigma) {
         std::default_random_engine e;
         std::random_device rd;
         std::normal_distribution<> gaussian(mu, sigma);
@@ -267,8 +254,7 @@ namespace Renderer
      * @param max
      * @return
      */
-    static float uniformRandom(float min, float max)
-    {
+    static float uniformRandom(float min, float max) {
         std::default_random_engine e;
         std::random_device rd;
         std::uniform_real_distribution<> uniform(min, max);
@@ -281,15 +267,13 @@ namespace Renderer
      * @param size
      * @return
      */
-    static float *getRandomFloatBuffer(int size)
-    {
+    static float *getRandomFloatBuffer(int size) {
         std::default_random_engine e;
         std::random_device rd;
         std::uniform_real_distribution<> uniform(0, 1.0f);
         e.seed(rd());
         float *buffer = new float[size];
-        for (int i = 0; i < size; i++)
-        {
+        for (int i = 0; i < size; i++) {
             buffer[i] = uniform(e);
         }
 
@@ -302,11 +286,10 @@ namespace Renderer
      * @param max
      * @return
      */
-    static float4 uniformRandomVector(float min, float max)
-    {
+    static float4 uniformRandomVector(float min, float max) {
         std::default_random_engine e;
         std::random_device rd;
-        std::uniform_real_distribution<> uniform(min, max);
+        std::uniform_real_distribution<float> uniform(min, max);
         e.seed(rd());
         return {uniform(e), uniform(e), uniform(e), 0};
     }

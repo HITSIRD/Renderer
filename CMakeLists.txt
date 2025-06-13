@@ -3,13 +3,13 @@ project(renderer)
 
 set(CMAKE_CXX_STANDARD 20)
 
-#SET(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/13.0.1/bin/clang-13)
+#SET(CMAKE_CXX_COMPILER /opt/homebrew/Cellar/llvm/15.0.0/bin/clang-15)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-include_directories(/opt/homebrew/include/eigen3)
+include_directories(/usr/include/eigen3)
 include_directories(include)
 
 aux_source_directory(src SRC)
@@ -25,5 +25,9 @@ aux_source_directory(src SRC)
 
 add_executable(renderer ${SRC})
 
-#target_link_libraries(renderer /opt/homebrew/Cellar/llvm/13.0.1/lib/libc++.dylib)
+#target_link_libraries(renderer /opt/homebrew/Cellar/llvm/15.0.0/lib/c++/libc++.1.0.dylib)
 target_link_libraries(renderer ${OpenCV_LIBRARIES})
+
+#add_compile_options(-Wall -Wextra -Wpedantic -g -fsanitize=address)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address -g")
+#set(CMAKE_LINKER_FLAGS "${CMAKE_LINKER_FLAGS} -fsanitize=address")

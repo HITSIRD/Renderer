@@ -10,8 +10,7 @@
 
 class Material;
 
-class HitRecord
-{
+class HitRecord {
 public:
     float t; // intersection t
     float4 position; // intersection point position in world space, e + t * d
@@ -24,7 +23,8 @@ public:
     std::vector<bool> isInShadow; // is intersection point is in shadow of each light source
 
     HitRecord(): t(0), position(0, 0, 0, 1.0f), color(0, 0, 0, 1.0f), normal(0, 0, 0, 0), textureCoord(0, 0),
-            material(nullptr) {}
+                 material(nullptr) {
+    }
 
     ~HitRecord() = default;
 };

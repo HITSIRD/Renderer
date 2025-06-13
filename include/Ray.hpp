@@ -7,22 +7,22 @@
 #ifndef RENDERER_RAY_HPP
 #define RENDERER_RAY_HPP
 
-namespace Renderer
-{
+namespace Renderer {
     static const float Epsilon = 0.0005f;
 }
 
-class Ray
-{
+class Ray {
 public:
     float4 origin; // start position in world space
     float4 direction; // direction in world space
 
-//    float intensity;
+    //    float intensity;
 
-    Ray() {}
+    Ray() {
+    }
 
-    Ray(float4 _origin, float4 _direction): origin(std::move(_origin)), direction(std::move(_direction)) {}
+    Ray(float4 _origin, float4 _direction): origin(std::move(_origin)), direction(std::move(_direction)) {
+    }
 
     ~Ray() = default;
 };

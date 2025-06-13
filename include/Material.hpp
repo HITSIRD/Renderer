@@ -8,26 +8,23 @@
 #include "Shader.hpp"
 #include "Texture.hpp"
 
-namespace Renderer
-{
-    enum TextureType
-    {
+namespace Renderer {
+    enum TextureType {
         TEXTURE_BASE, TEXTURE_NORMAL, TEXTURE_AO, TEXTURE_METALNESS, TEXTURE_ROUGHNESS, TEXTURE_EMISSION,
     };
 }
 
-class Material
-{
+class Material {
 protected:
     Shader *shader;
 
 public:
-    std::shared_ptr<Texture2D<unsigned char>> textureBase; // base color texture
-    std::shared_ptr<Texture2D<unsigned char>> textureNormal; // normal texture
-    std::shared_ptr<Texture2D<unsigned char>> textureAO; // ambient occlusion texture
-    std::shared_ptr<Texture2D<unsigned char>> textureMetalness; // metalness texture
-    std::shared_ptr<Texture2D<unsigned char>> textureRoughness; // roughness texture
-    std::shared_ptr<Texture2D<unsigned char>> textureEmission; // emission texture
+    std::shared_ptr<Texture2D<unsigned char> > textureBase; // base color texture
+    std::shared_ptr<Texture2D<unsigned char> > textureNormal; // normal texture
+    std::shared_ptr<Texture2D<unsigned char> > textureAO; // ambient occlusion texture
+    std::shared_ptr<Texture2D<unsigned char> > textureMetalness; // metalness texture
+    std::shared_ptr<Texture2D<unsigned char> > textureRoughness; // roughness texture
+    std::shared_ptr<Texture2D<unsigned char> > textureEmission; // emission texture
 
     float ambient;
     float diffuse;
