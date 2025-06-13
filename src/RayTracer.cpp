@@ -190,73 +190,83 @@ inline Ray RayTracer::emitRay(float x, float y) const {
 }
 
 float4 RayTracer::routeTracing(Ray &ray, int depth) const {
-    HitRecord record;
+    float4 color(0, 0, 0, 1.0f);
+    float4 throughput = float4(1, 1, 1, 0);
 
-    if (s->model->BVH->hit(ray, TMin, TMax, record)) {
-        record.position = ray.origin + record.t * ray.direction;
-        Uniform uniform;
-        uniform.viewPosition = ray.origin;
-        uniform.lightSource = &s->lightSource;
-        record.material->setUniform(uniform);
-        s->shader = record.material->getShader(); // set shader for material
-        s->shader->setUniform(uniform); // set uniform
+    while (depth <= 8) {
+        HitRecord record;
 
-        for (auto &light: s->lightSource) {
-            HitRecord shadowRec;
-            if (light->type == SUN) {
-                auto sun = (SunLight *) light;
-                Ray shadowRay =
-                        Ray(record.position + sun->direct * Epsilon, sun->direct); // to avoid self-occlusion
+        if (s->model->BVH->hit(ray, TMin, TMax, record)) {
+            record.position = ray.origin + record.t * ray.direction;
+            Uniform uniform;
+            uniform.viewPosition = ray.origin;
+            uniform.lightSource = &s->lightSource;
+            record.material->setUniform(uniform);
+            s->shader = record.material->getShader(); // set shader for material
+            s->shader->setUniform(uniform); // set uniform
 
-                if (s->model->BVH->hit(shadowRay, TMin, TMax, shadowRec)) {
-                    record.isInShadow.push_back(true);
-                } else {
+            for (auto &light: s->lightSource) {
+                HitRecord shadowRec;
+                if (light->type == SUN) {
+                    auto sun = (SunLight *) light;
+                    Ray shadowRay =
+                            Ray(record.position + sun->direct * Epsilon, sun->direct); // to avoid self-occlusion
+
+                    if (s->model->BVH->hit(shadowRay, TMin, TMax, shadowRec)) {
+                        record.isInShadow.push_back(true);
+                    } else {
+                        record.isInShadow.push_back(false);
+                    }
+                } else if (light->type == POINT) {
+                    float4 direct = (light->position - record.position).normalized();
+                    float t_max = (light->position - record.position).lpNorm<2>();
+                    Ray shadow_ray = Ray(record.position + direct * Epsilon, direct); // to avoid self-occlusion
+
+                    if (s->model->BVH->hit(shadow_ray, TMin, TMax, shadowRec)) {
+                        if (shadowRec.t < t_max) {
+                            record.isInShadow.push_back(true);
+                            continue;
+                        }
+                    }
                     record.isInShadow.push_back(false);
                 }
-            } else if (light->type == POINT) {
-                float4 direct = (light->position - record.position).normalized();
-                float t_max = (light->position - record.position).lpNorm<2>();
-                Ray shadow_ray = Ray(record.position + direct * Epsilon, direct); // to avoid self-occlusion
+            }
 
-                if (s->model->BVH->hit(shadow_ray, TMin, TMax, shadowRec)) {
-                    if (shadowRec.t < t_max) {
-                        record.isInShadow.push_back(true);
-                        continue;
-                    }
+            //            ray.d = -2.0f * record.flat_normal * record.flat_normal.dot(ray.d) + ray.d; // mirror reflection
+
+            srand(time(nullptr));
+            float ksi = randomFloatBuffer[random() % RANDOM_BUFFER_SIZE];
+            float phi = randomFloatBuffer[random() % RANDOM_BUFFER_SIZE];
+            float tmpKsi = Pi2 * ksi;
+            float tmpPhi0 = sqrtf(phi);
+            float tmpPhi1 = sqrtf(1.0f - phi);
+            float tmpPhi2 = sqrtf(1.0f - phi * phi);
+
+            float4 rand_d(cosf(tmpKsi) * tmpPhi0, sinf(tmpKsi) * tmpPhi0, tmpPhi1, 0); // cosine semi-sphere
+
+            float4 X = record.flatNormal.cross3(RandomFloat4).normalized();
+            float4 Y = record.flatNormal.cross3(X);
+            float4x4 matrixRotate; // rotate random vector to normal space
+            matrixRotate << X, Y, record.flatNormal, ZeroFloat4;
+            ray.direction = matrixRotate * rand_d.normalized();
+            ray.origin = record.position + ray.direction * Epsilon;
+
+            if (depth == 8) {
+                if (ksi < 0.5f) {
+                    color += throughput.cwiseProduct(s->shader->rayShader(record)) * 2.0f;
                 }
-                record.isInShadow.push_back(false);
             }
+
+            color += throughput.cwiseProduct(s->shader->rayShader(record));
+            throughput = throughput.cwiseProduct(record.color);
+        } else {
+            return color;
         }
 
-        //            ray.d = -2.0f * record.flat_normal * record.flat_normal.dot(ray.d) + ray.d; // mirror reflection
-
-        srand(time(nullptr));
-        float ksi = randomFloatBuffer[random() % RANDOM_BUFFER_SIZE];
-        float phi = randomFloatBuffer[random() % RANDOM_BUFFER_SIZE];
-        float tmpKsi = Pi2 * ksi;
-        float tmpPhi0 = sqrtf(phi);
-        float tmpPhi1 = sqrtf(1.0f - phi);
-        float tmpPhi2 = sqrtf(1.0f - phi * phi);
-
-        float4 rand_d(cosf(tmpKsi) * tmpPhi0, sinf(tmpKsi) * tmpPhi0, tmpPhi1, 0); // cosine semi-sphere
-
-        float4 X = record.flatNormal.cross3(RandomFloat4).normalized();
-        float4 Y = record.flatNormal.cross3(X);
-        float4x4 matrixRotate; // rotate random vector to normal space
-        matrixRotate << X, Y, record.flatNormal, ZeroFloat4;
-        ray.direction = matrixRotate * rand_d.normalized();
-        ray.origin = record.position + ray.direction * Epsilon;
-        if (depth >= 8) {
-            if (ksi < 0.5f) {
-                return (s->shader->rayShader(record) + record.color.cwiseProduct(routeTracing(ray, depth + 1))) * 2.0f;
-            } else {
-                return {0, 0, 0, 1.0f};
-            }
-        }
-        return s->shader->rayShader(record) + record.color.cwiseProduct(routeTracing(ray, depth + 1));
+        depth++;
     }
 
-    return {0, 0, 0, 1.0f};
+    return color;
 }
 
 void RayTracer::writeColor(int x, int y, const float4 &color) const {
